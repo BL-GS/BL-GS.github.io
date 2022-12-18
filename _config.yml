@@ -98,9 +98,11 @@ ignore:
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: anatole
+theme: yelee
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
-deploy:
-  type: ''
+deploy: 
+  type: git
+  repo: https://github.com/BL-GS/BL-GS.github.io.git
+  branch: main

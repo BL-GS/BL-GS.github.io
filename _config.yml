@@ -2,16 +2,24 @@
 ## Docs: https://hexo.io/docs/configuration.html
 ## Source: https://github.com/hexojs/hexo/
 
+
 # Site
 title: Zheng Xinrui
-subtitle: 'Harbin Institute of Technology, Shen Zhen'
-description: 'This man is too lazy to introduce himself'
-keywords:
-author: Zheng Xinrui
-language: en
-timezone: ''
-avatar: https://github.com/BL-GS/BL-GS.github.io/source/img/BLGS-logo.png
-github: https://github.com/BL-GS
+subtitle: Harbin Institute of Technology
+description: This man is too lazy to introduce himself.
+keywords: C/C++,DB,Transaction
+author: Zheng Xinrui,zhengxinrui02@gail.com
+language: 'en'
+avatar: source/img/logo.png  # 右上角的头像，可用绝对路径引入他站资源 / Avatar in the top right corner
+
+# Social Accounts
+twitter: 
+rss: 
+weibo: 
+instagram: 
+github: BL-GS
+facebook: 
+
 # URL
 ## Set your site url here. For example, if you use GitHub Page, set url as 'https://username.github.io/project'
 url: https://bl-gs.github.io
@@ -66,6 +74,12 @@ index_generator:
   per_page: 10
   order_by: -date
 
+archive_generator:
+  per_page: 0  
+  yearly: false
+  monthly: false
+  daily: false
+
 # Category & Tag
 default_category: uncategorized
 category_map:
@@ -98,7 +112,7 @@ ignore:
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: yelee
+theme: anatole
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment

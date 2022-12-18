@@ -3,17 +3,18 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: Hexo
-subtitle: ''
-description: ''
+title: Zheng Xinrui
+subtitle: 'Harbin Institute of Technology, Shen Zhen'
+description: 'This man is too lazy to introduce himself'
 keywords:
-author: John Doe
+author: Zheng Xinrui
 language: en
 timezone: ''
-
+avatar: https://github.com/BL-GS/BL-GS.github.io/source/img/BLGS-logo.png
+github: https://github.com/BL-GS
 # URL
 ## Set your site url here. For example, if you use GitHub Page, set url as 'https://username.github.io/project'
-url: http://example.com
+url: https://bl-gs.github.io
 permalink: :year/:month/:day/:title/
 permalink_defaults:
 pretty_urls:
@@ -97,7 +98,7 @@ ignore:
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: landscape
+theme: anatole
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment

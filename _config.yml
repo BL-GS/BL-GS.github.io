@@ -119,4 +119,4 @@ theme: anatole
 deploy: 
   type: git
   repo: https://github.com/BL-GS/BL-GS.github.io.git
-  branch: main
+  branch: gh-pages

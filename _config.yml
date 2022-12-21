@@ -8,7 +8,7 @@ title: Zheng Xinrui
 subtitle: Harbin Institute of Technology
 description: This man is too lazy to introduce himself.
 keywords: C/C++,DB,Transaction
-author: Zheng Xinrui,zhengxinrui02@gail.com
+author: Zheng Xinrui
 language: 'en'
 avatar: source/img/logo.png  # 右上角的头像，可用绝对路径引入他站资源 / Avatar in the top right corner
 
@@ -56,7 +56,7 @@ highlight:
   enable: true
   line_number: true
   auto_detect: false
-  tab_replace: ''
+  tab_replace: 
   wrap: true
   hljs: false
 prismjs:
@@ -112,7 +112,7 @@ ignore:
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: anatole
+theme: next
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
@@ -120,3 +120,10 @@ deploy:
   type: git
   repo: https://github.com/BL-GS/BL-GS.github.io.git
   branch: gh-pages
+
+math:
+  engine: 'mathjax'
+  mathjax:
+    src: custom_mathjax_source
+    config:
+      # MathJax config

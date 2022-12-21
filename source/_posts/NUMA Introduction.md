@@ -1,5 +1,11 @@
 ---
 title: NUMA Introduction
+categories:
+- NUMA
+tags:
+- NUMA
+- Transaction
+description: Simple introduction of NUMA and some optimizations about it.
 ---
 # NUMA
 

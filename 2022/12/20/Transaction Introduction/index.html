@@ -217,20 +217,14 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1 id="事务的概念">事务的概念</h1>
-<p><strong>事务</strong>
-是访问并可能更新各种数据项的一个程序执行单元。简单的说，一个事务是这么一种操作，要么能够完成，要么不引起任何影响。</p>
-<p> </p>
-<h1 id="事务的状态">事务的状态</h1>
-<p>事务必须处于以下状态之一：</p>
+        <h1 id="事务的概念"><a href="#事务的概念" class="headerlink" title="事务的概念"></a>事务的概念</h1><p><strong>事务</strong> 是访问并可能更新各种数据项的一个程序执行单元。简单的说，一个事务是这么一种操作，要么能够完成，要么不引起任何影响。</p>
+<p>&nbsp;</p>
+<h1 id="事务的状态"><a href="#事务的状态" class="headerlink" title="事务的状态"></a>事务的状态</h1><p>事务必须处于以下状态之一：</p>
 <ul>
 <li><strong>活跃</strong> <code>Active</code>：事务执行时的初始状态</li>
-<li><strong>部分提交</strong>
-<code>Partially commited</code>：在最后一条语句执行之后</li>
-<li><strong>失效</strong>
-<code>Failed</code>：发现正常执行不能再继续下去</li>
-<li><strong>中止</strong>
-<code>Aborted</code>：在事务已经回滚并且数据库已经恢复到原先状态之后</li>
+<li><strong>部分提交</strong> <code>Partially commited</code>：在最后一条语句执行之后</li>
+<li><strong>失效</strong> <code>Failed</code>：发现正常执行不能再继续下去</li>
+<li><strong>中止</strong> <code>Aborted</code>：在事务已经回滚并且数据库已经恢复到原先状态之后</li>
 <li><strong>提交</strong> <code>Commited</code>：成功完成之后</li>
 </ul>
 <pre class="mermaid">graph LR;
@@ -239,38 +233,20 @@
     部分提交状态-->失效状态;
     部分提交状态-->提交状态;
     失效状态-->中止状态;</pre>
-<p><strong>终止</strong> <code>Terminated</code>
-当一个事务要么是提交的，要么是中止的，即为终止状态</p>
-<p> </p>
-<h1 id="事务的属性">事务的属性</h1>
-<p>事务需要具有 <code>ACID</code> 属性：</p>
-<h2 id="原子性-atomicity"><strong>原子性</strong>
-<code>Atomicity</code></h2>
-<p>事务的所有操作在数据库中要么全部正确反映出来，要么完全不反映</p>
+
+<p><strong>终止</strong> <code>Terminated</code> 当一个事务要么是提交的，要么是中止的，即为终止状态</p>
+<p>&nbsp;</p>
+<h1 id="事务的属性"><a href="#事务的属性" class="headerlink" title="事务的属性"></a>事务的属性</h1><p>事务需要具有 <code>ACID</code> 属性：</p>
+<h2 id="原子性-Atomicity"><a href="#原子性-Atomicity" class="headerlink" title="原子性 Atomicity"></a><strong>原子性</strong> <code>Atomicity</code></h2><p>事务的所有操作在数据库中要么全部正确反映出来，要么完全不反映</p>
 <blockquote>
-<p>保证原子性的基本思想是：数据库系统记录事务要执行写操作的任何数据项的旧值。这种东西记录在一个
-<em>日志</em>
-中。当事务未能完成其执行，恢复系统可以从日志中恢复出旧值。</p>
+<p>保证原子性的基本思想是：数据库系统记录事务要执行写操作的任何数据项的旧值。这种东西记录在一个 <em>日志</em> 中。当事务未能完成其执行，恢复系统可以从日志中恢复出旧值。</p>
 </blockquote>
-<p>事务并非总能成功执行，这种事务被称为 <strong>中止</strong>
-<code>Aborted</code> 了。而成功完成其执行的事务被称为
-<strong>已提交</strong> <code>Commited</code>。</p>
-<p>为了保证原子性，中止的事务必须不对数据库的状态造成影响，其做过的任何改变也需要撤销。一旦中止的事务造成的变更被撤销，我们称其为
-<strong>回滚</strong> <code>Rolled back</code></p>
-<p>管理事务中止是恢复机制的职责之一，一种典型的方式是维护一个
-<strong>日志</strong>
-<code>Log</code>。当事务被中止，此时系统有两种选择：<strong>重启事务</strong>
-或者 <strong>杀死事务</strong>。</p>
-<p>但是一旦事务被提交，不能够通过中止来撤销其造成的影响，只能通过
-<strong>补偿事务</strong> <code>Compensating transaction</code>
-来弥补。</p>
-<h2 id="一致性-consistency"><strong>一致性</strong>
-<code>Consistency</code></h2>
-<p>以隔离的方式执行事务以保持事务的一致性</p>
-<h2 id="隔离性-isolation"><strong>隔离性</strong>
-<code>Isolation</code></h2>
-<p>尽管多个事务可能并发执行，但是需要保证，对于每个事务，其运行时不需关心其他事务的运行情况。确保隔离性是数据库系统中
-<em>并发控制系统</em> 的责任。</p>
+<p>事务并非总能成功执行，这种事务被称为 <strong>中止</strong> <code>Aborted</code> 了。而成功完成其执行的事务被称为 <strong>已提交</strong> <code>Commited</code>。</p>
+<p>为了保证原子性，中止的事务必须不对数据库的状态造成影响，其做过的任何改变也需要撤销。一旦中止的事务造成的变更被撤销，我们称其为 <strong>回滚</strong> <code>Rolled back</code></p>
+<p>管理事务中止是恢复机制的职责之一，一种典型的方式是维护一个 <strong>日志</strong> <code>Log</code>。当事务被中止，此时系统有两种选择：<strong>重启事务</strong> 或者 <strong>杀死事务</strong>。</p>
+<p>但是一旦事务被提交，不能够通过中止来撤销其造成的影响，只能通过 <strong>补偿事务</strong> <code>Compensating transaction</code> 来弥补。</p>
+<h2 id="一致性-Consistency"><a href="#一致性-Consistency" class="headerlink" title="一致性 Consistency"></a><strong>一致性</strong> <code>Consistency</code></h2><p>以隔离的方式执行事务以保持事务的一致性</p>
+<h2 id="隔离性-Isolation"><a href="#隔离性-Isolation" class="headerlink" title="隔离性 Isolation"></a><strong>隔离性</strong> <code>Isolation</code></h2><p>尽管多个事务可能并发执行，但是需要保证，对于每个事务，其运行时不需关心其他事务的运行情况。确保隔离性是数据库系统中 <em>并发控制系统</em> 的责任。</p>
 <p>当事务是 <strong>串行</strong> 执行时，事情会简单很多。</p>
 <blockquote>
 <p>事务 <strong>并行</strong> 的理由：</p>
@@ -279,193 +255,99 @@
 <li>减少等待时间。</li>
 </ul>
 </blockquote>
-<p>当事务是 <strong>并行</strong> 的时候，系统通过
-<strong>并发控制机制</strong>(Concurrent-control scheme)
-的一系列机制来做到这一点。我们通过保证所执行的任何调度的效果都与没有任何并发执行的调度效果是一样的，来保证数据库的一致性。这种调度称为
-<strong>可串行化的</strong>(Serializable) 调度。</p>
+<p>当事务是 <strong>并行</strong> 的时候，系统通过 <strong>并发控制机制</strong>(Concurrent-control scheme) 的一系列机制来做到这一点。我们通过保证所执行的任何调度的效果都与没有任何并发执行的调度效果是一样的，来保证数据库的一致性。这种调度称为 <strong>可串行化的</strong>(Serializable) 调度。</p>
 <p>当事务失效时，需要撤销其影响以确保该事务的原子性。这里从事务失效的角度讨论如何的调度是可接受的</p>
 <ul>
 <li><p><strong>可恢复调度</strong></p>
-<p>对于每对事务 <span class="math inline">\(T_i\)</span> 和 <span
-class="math inline">\(T_j\)</span> ，如果 <span
-class="math inline">\(T_j\)</span> 读取了由 <span
-class="math inline">\(T_i\)</span> 之前所写过的数据项，则 <span
-class="math inline">\(T_i\)</span> 的提交操作出现在 <span
-class="math inline">\(T_j\)</span> 的提交操作之前。</p></li>
+<p>  对于每对事务 $T_i$ 和 $T_j$ ，如果 $T_j$ 读取了由 $T_i$ 之前所写过的数据项，则 $T_i$ 的提交操作出现在 $T_j$ 的提交操作之前。</p>
+</li>
 <li><p><strong>无级联调度</strong></p>
-<p>因为单个事务失败而导致的一系列事务回滚的现象称为
-<strong>级联回滚</strong></p>
-<p><strong>无级联调度</strong>是指：对于每对事务 <span
-class="math inline">\(T_i\)</span> 和 <span
-class="math inline">\(T_j\)</span> 都满足如果 <span
-class="math inline">\(T_j\)</span> 读取了先前由 <span
-class="math inline">\(T_j\)</span> 所写的一个数据项，则 <span
-class="math inline">\(T_i\)</span> 的提交操作必须出现在 <span
-class="math inline">\(T_j\)</span> 的这一个读操作之前。</p></li>
+<p>  因为单个事务失败而导致的一系列事务回滚的现象称为 <strong>级联回滚</strong></p>
+<p>  <strong>无级联调度</strong>是指：对于每对事务 $T_i$ 和 $T_j$ 都满足如果 $T_j$ 读取了先前由 $T_j$ 所写的一个数据项，则 $T_i$ 的提交操作必须出现在 $T_j$ 的这一个读操作之前。</p>
+</li>
 </ul>
-<h2 id="持久性-durability"><strong>持久性</strong>
-<code>Durability</code></h2>
-<p>当一个事务完成之后，它对数据库的改变是永久的，即使出现系统故障也是如此。通过确保以下任一条来保证持久性：</p>
+<h2 id="持久性-Durability"><a href="#持久性-Durability" class="headerlink" title="持久性 Durability"></a><strong>持久性</strong> <code>Durability</code></h2><p>当一个事务完成之后，它对数据库的改变是永久的，即使出现系统故障也是如此。通过确保以下任一条来保证持久性：</p>
 <ul>
 <li>由事务所执行的更新在事务结束之前就已经写入磁盘</li>
 <li>有关事务已经执行的更新信息已经被写入磁盘，足以是的恢复系统正常工作。</li>
 </ul>
-<p> </p>
-<h1 id="事务读写模型">事务读写模型</h1>
-<p>这里只考虑两种事务操作
-<code>read</code>、<code>write</code>。同时这里每个数据项只包含单个数据值，每个数据项通过名字来识别。</p>
+<p>&nbsp;</p>
+<h1 id="事务读写模型"><a href="#事务读写模型" class="headerlink" title="事务读写模型"></a>事务读写模型</h1><p>这里只考虑两种事务操作 <code>read</code>、<code>write</code>。同时这里每个数据项只包含单个数据值，每个数据项通过名字来识别。</p>
 <ul>
-<li><code>read</code>：从数据库把数据项 X 传送给一个也称为 X 的变量，X
-位于属于执行 <code>read</code> 操作的事务的主存缓冲区中</li>
-<li><code>write</code>：从执行 <code>write</code>
-的事务的主存缓冲区中把变量 X 的值传送给数据库中的 X 数据项。</li>
+<li><code>read</code>：从数据库把数据项 X 传送给一个也称为 X 的变量，X 位于属于执行 <code>read</code> 操作的事务的主存缓冲区中</li>
+<li><code>write</code>：从执行 <code>write</code> 的事务的主存缓冲区中把变量 X 的值传送给数据库中的 X 数据项。</li>
 </ul>
 <blockquote>
 <p>知道一个数据项的变化是否只出现在主存中或者是否已经写入到磁盘是十分重要的。在实际的数据库中，写入操作不一定导致磁盘上数据的立即更新。</p>
 </blockquote>
-<p>考虑 <code>read</code> 和 <code>write</code> 操作的
-<strong>冲突可串行化</strong>(Conflict serializable)：</p>
-<p>一个调度 <span class="math inline">\(S\)</span>
-，其中含有分别属于事务 <span class="math inline">\(T_i\)</span> 和 <span
-class="math inline">\(T_j\)</span> 的两条连续指令 I 和
-J，考虑四种情况：</p>
-<ol type="1">
+<p>考虑 <code>read</code> 和 <code>write</code> 操作的 <strong>冲突可串行化</strong>(Conflict serializable)：</p>
+<p>一个调度 $S$ ，其中含有分别属于事务 $T_i$ 和 $T_j$ 的两条连续指令 I 和 J，考虑四种情况：</p>
+<ol>
 <li>I = read(Q)，J = read(Q)：I 和 J 的次序无关紧要。</li>
-<li>I = read(Q)，J = write(Q)：若 I 先于 J，则 <span
-class="math inline">\(T_i\)</span> 不会读到 <span
-class="math inline">\(T_j\)</span> 写入的 Q 值；反之，<span
-class="math inline">\(T_i\)</span> 读到的是 <span
-class="math inline">\(T_j\)</span> 写入的 Q 值。</li>
+<li>I = read(Q)，J = write(Q)：若 I 先于 J，则 $T_i$ 不会读到 $T_j$ 写入的 Q 值；反之，$T_i$ 读到的是 $T_j$ 写入的 Q 值。</li>
 <li>I = write(Q)，J = read(Q)：同上。</li>
-<li>I = write(Q)，J =
-write(Q)：这两条指令的次序对彼此并不会有影响，但是对于之后的下一条 read
-指令会有影响。</li>
+<li>I = write(Q)，J = write(Q)：这两条指令的次序对彼此并不会有影响，但是对于之后的下一条 read 指令会有影响。</li>
 </ol>
 <blockquote>
-<p>若 I 和 J 是属于不同事务的指令且 I 和 J
-并不冲突，则可以交换二者的顺序来形成一个新的调度 <span
-class="math inline">\(S&#39;\)</span></p>
-<p>如果调度 <span class="math inline">\(S\)</span>
-能够经过一系列的非冲突指令的交换得到调度 <span
-class="math inline">\(S&#39;\)</span> ，则称二者是
-<strong>冲突等价的</strong></p>
+<p>若 I 和 J 是属于不同事务的指令且 I 和 J 并不冲突，则可以交换二者的顺序来形成一个新的调度 $S’$</p>
+<p>如果调度 $S$ 能够经过一系列的非冲突指令的交换得到调度 $S’$ ，则称二者是 <strong>冲突等价的</strong></p>
 </blockquote>
-<p>可以考虑建立调度的有向图 <strong>优先图</strong>(Precedence
-graph)，通过 <strong>拓扑排序</strong> 得到
-<strong>可串行化次序</strong></p>
-<p> </p>
-<h1 id="事务插入删除模型">事务插入删除模型</h1>
-<h2 id="删除">删除</h2>
-<p>要理解删除指令如何影响并发控制的，需要弄清楚删除指令何时与另一个指令发生冲突，令
-<span class="math inline">\(I_i = delete(Q)\)</span> ：</p>
+<p>可以考虑建立调度的有向图 <strong>优先图</strong>(Precedence graph)，通过 <strong>拓扑排序</strong> 得到 <strong>可串行化次序</strong></p>
+<p>&nbsp;</p>
+<h1 id="事务插入删除模型"><a href="#事务插入删除模型" class="headerlink" title="事务插入删除模型"></a>事务插入删除模型</h1><h2 id="删除"><a href="#删除" class="headerlink" title="删除"></a>删除</h2><p>要理解删除指令如何影响并发控制的，需要弄清楚删除指令何时与另一个指令发生冲突，令 $I_i = delete(Q)$ ：</p>
 <ul>
-<li><span class="math inline">\(I_j\)</span> = read(Q)，发生冲突。如果
-<span class="math inline">\(I_i\)</span> 出现在 <span
-class="math inline">\(I_j\)</span> 之前，则 <span
-class="math inline">\(T_j\)</span> 将出现逻辑错误；如果 <span
-class="math inline">\(I_i\)</span> 出现在 <span
-class="math inline">\(I_j\)</span> 之后，则 <span
-class="math inline">\(T_j\)</span> 可以成功执行 read 操作。</li>
-<li><span class="math inline">\(I_j\)</span> = write(Q)，发生冲突。如果
-<span class="math inline">\(I_i\)</span> 出现在 <span
-class="math inline">\(I_j\)</span> 之前，则 <span
-class="math inline">\(T_j\)</span> 将出现逻辑错误；如果 <span
-class="math inline">\(I_i\)</span> 出现在 <span
-class="math inline">\(I_j\)</span> 之后，则 <span
-class="math inline">\(T_j\)</span> 可以成功执行 write 操作。</li>
-<li><span class="math inline">\(I_j\)</span> = delete(Q)，发生冲突。如果
-<span class="math inline">\(I_i\)</span> 出现在 <span
-class="math inline">\(I_j\)</span> 之前，则 <span
-class="math inline">\(T_j\)</span> 将出现逻辑错误；如果 <span
-class="math inline">\(I_i\)</span> 出现在 <span
-class="math inline">\(I_j\)</span> 之后，则 <span
-class="math inline">\(T_i\)</span> 出现逻辑错误。</li>
-<li><span class="math inline">\(I_j\)</span> =
-insert(Q)，发生冲突。</li>
+<li>$I_j$ = read(Q)，发生冲突。如果 $I_i$ 出现在 $I_j$ 之前，则 $T_j$ 将出现逻辑错误；如果 $I_i$ 出现在 $I_j$ 之后，则 $T_j$ 可以成功执行 read 操作。 </li>
+<li>$I_j$ = write(Q)，发生冲突。如果 $I_i$ 出现在 $I_j$ 之前，则 $T_j$ 将出现逻辑错误；如果 $I_i$ 出现在 $I_j$ 之后，则 $T_j$ 可以成功执行 write 操作。 </li>
+<li>$I_j$ = delete(Q)，发生冲突。如果 $I_i$ 出现在 $I_j$ 之前，则 $T_j$ 将出现逻辑错误；如果 $I_i$ 出现在 $I_j$ 之后，则 $T_i$ 出现逻辑错误。</li>
+<li>$I_j$ = insert(Q)，发生冲突。 </li>
 </ul>
 <p>总结如下：</p>
 <ul>
 <li>在两阶段封锁协议下，在一个数据项可以被删除之前，需要获得该数据项上的排他锁。</li>
-<li>在时间戳排序协议下，必须执行类似于为 write
-操作所进行的测试。假如事务 <span class="math inline">\(T_i\)</span> 发出
-delete(Q)：
-<ul>
-<li>如果 TS(<span class="math inline">\(T_i\)</span>) &lt;
-R-timestamp(<span class="math inline">\(Q\)</span>)，则 <span
-class="math inline">\(T_i\)</span> 将要删除的 <span
-class="math inline">\(Q\)</span> 值已被满足 TS(<span
-class="math inline">\(T_j\)</span>) &gt; TS(<span
-class="math inline">\(T_i\)</span>) 的事务 <span
-class="math inline">\(T_j\)</span> 读取。因此，delete 操作被拒绝，并且
-<span class="math inline">\(T_i\)</span> 回滚。</li>
-<li>如果 TS(<span class="math inline">\(T_i\)</span>) &lt;
-W-timestamp(<span class="math inline">\(Q\)</span>)，则满足 TS(<span
-class="math inline">\(T_j\)</span>) &gt; TS(<span
-class="math inline">\(T_i\)</span>) 的事务 <span
-class="math inline">\(T_j\)</span> 已经写过 <span
-class="math inline">\(Q\)</span>。因此这个 delete 操作被拒绝，并且 <span
-class="math inline">\(T_i\)</span> 回滚。</li>
+<li>在时间戳排序协议下，必须执行类似于为 write 操作所进行的测试。假如事务 $T_i$ 发出 delete(Q)：<ul>
+<li>如果 TS($T_i$) &lt; R-timestamp($Q$)，则 $T_i$ 将要删除的 $Q$ 值已被满足 TS($T_j$) &gt; TS($T_i$) 的事务 $T_j$ 读取。因此，delete 操作被拒绝，并且 $T_i$ 回滚。</li>
+<li>如果 TS($T_i$) &lt; W-timestamp($Q$)，则满足 TS($T_j$) &gt; TS($T_i$) 的事务 $T_j$ 已经写过 $Q$。因此这个 delete 操作被拒绝，并且 $T_i$ 回滚。</li>
 <li>否则执行 delete 操作。</li>
-</ul></li>
 </ul>
-<h2 id="插入">插入</h2>
-<p>在一个数据项存在之前不能对它执行 read 或 write 操作：</p>
+</li>
+</ul>
+<h2 id="插入"><a href="#插入" class="headerlink" title="插入"></a>插入</h2><p>在一个数据项存在之前不能对它执行 read 或 write 操作：</p>
 <ul>
-<li>在两阶段封锁协议下，如果 <span class="math inline">\(T_i\)</span>
-执行 insert(<span class="math inline">\(Q\)</span>) 操作，那么 <span
-class="math inline">\(T_i\)</span> 在新创建的数据项 <span
-class="math inline">\(Q\)</span> 上被赋予排他锁。</li>
-<li>在时间戳排序协议下，如果 <span class="math inline">\(T_i\)</span>
-执行 insert(<span class="math inline">\(Q\)</span>) 操作，那么
-R-timestamp(<span class="math inline">\(Q\)</span>) 与 W-timestamp(<span
-class="math inline">\(Q\)</span>) 的值被设置为 <span
-class="math inline">\(TS(T_i)\)</span></li>
+<li>在两阶段封锁协议下，如果 $T_i$ 执行 insert($Q$) 操作，那么 $T_i$ 在新创建的数据项 $Q$ 上被赋予排他锁。</li>
+<li>在时间戳排序协议下，如果 $T_i$ 执行 insert($Q$) 操作，那么 R-timestamp($Q$) 与 W-timestamp($Q$) 的值被设置为 $TS(T_i)$</li>
 </ul>
-<p> </p>
-<h1 id="事务的隔离性级别">事务的隔离性级别</h1>
-<p>保证可串行性的协议可能只允许较小的并发度。在这种情况下，可以采用较弱级别的一致性，但是同时需要保证数据库的正确性。</p>
+<p>&nbsp;</p>
+<h1 id="事务的隔离性级别"><a href="#事务的隔离性级别" class="headerlink" title="事务的隔离性级别"></a>事务的隔离性级别</h1><p>保证可串行性的协议可能只允许较小的并发度。在这种情况下，可以采用较弱级别的一致性，但是同时需要保证数据库的正确性。</p>
 <p>事务的 <strong>隔离性级别</strong>(Isolation level)</p>
 <ul>
 <li><p><strong>可串行化 <code>Serializable</code></strong></p>
-<p>通常保证可串行化的执行。但是一些数据库系统某些情况下允许非可串行化执行的方式来实现这种隔离级别</p></li>
+<p>  通常保证可串行化的执行。但是一些数据库系统某些情况下允许非可串行化执行的方式来实现这种隔离级别</p>
+</li>
 <li><p><strong>可重复读 <code>Repeatable read</code></strong></p>
-<p>只允许读取已提交的数据，并进一步要求在一个事务两次读取一个数据项期间，其他事务不得更新该数据项</p></li>
+<p>  只允许读取已提交的数据，并进一步要求在一个事务两次读取一个数据项期间，其他事务不得更新该数据项</p>
+</li>
 <li><p><strong>已提交读 <code>Read commited</code></strong></p>
-<p>只允许读取已提交的数据，当不要求可重复读</p></li>
+<p>  只允许读取已提交的数据，当不要求可重复读</p>
+</li>
 <li><p><strong>未提交读 <code>Read uncommited</code></strong></p>
-<p>允许读取未提交数据</p></li>
+<p>  允许读取未提交数据</p>
+</li>
 </ul>
 <blockquote>
-<p>以上的隔离性级别附带都不允许 <strong>脏写
-<code>dirty write</code></strong>，即如果一个数据线已经被另外一个尚未提交或中止的事务写过，则不允许对该数据项再执行写操作。</p>
+<p>以上的隔离性级别附带都不允许 <strong>脏写 <code>dirty write</code></strong>，即如果一个数据线已经被另外一个尚未提交或中止的事务写过，则不允许对该数据项再执行写操作。</p>
 </blockquote>
-<p> </p>
-<h2 id="谓词读和幻像">谓词读和幻像</h2>
-<p>考虑事务 <span class="math inline">\(T_1\)</span>
-，它在大学数据库上执行 SQL 查询：</p>
+<p>&nbsp;</p>
+<h2 id="谓词读和幻像"><a href="#谓词读和幻像" class="headerlink" title="谓词读和幻像"></a>谓词读和幻像</h2><p>考虑事务 $T_1$ ，它在大学数据库上执行 SQL 查询：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">select count(*)</span><br><span class="line">from instructor</span><br><span class="line">where dept_name = &#x27;Physics&#x27;</span><br></pre></td></tr></table></figure>
-<p>事务 <span class="math inline">\(T_1\)</span> 需要访问
-<em>instructor</em> 关系中属于物理组的所有元组。</p>
-<p>令 <span class="math inline">\(T_2\)</span> 为一个执行以下 SQL
-插入的事务：</p>
+<p>事务 $T_1$ 需要访问 <em>instructor</em> 关系中属于物理组的所有元组。</p>
+<p>令 $T_2$ 为一个执行以下 SQL 插入的事务：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">insert into instructor</span><br><span class="line">	values(11111, &#x27;Feynman&#x27;, &#x27;Physics&#x27;, 94000)</span><br></pre></td></tr></table></figure>
-<p>令 <span class="math inline">\(S\)</span> 为一个对应的调度：</p>
+<p>令 $S$ 为一个对应的调度：</p>
 <ul>
-<li>如果 <span class="math inline">\(T_1\)</span> 在计算 count(*)
-时使用了 <span class="math inline">\(T_2\)</span> 新插入的元组，则 <span
-class="math inline">\(T_1\)</span> 就读取了被 <span
-class="math inline">\(T_2\)</span> 写入的一个值，因此在等价于 <span
-class="math inline">\(S\)</span> 的串行调度中，<span
-class="math inline">\(T_2\)</span> 必须先于 <span
-class="math inline">\(T_1\)</span></li>
-<li>如果 <span class="math inline">\(T_1\)</span> 在计算 count(*)
-时并未使用 <span class="math inline">\(T_2\)</span>
-新插入的元组，则在等价于 <span class="math inline">\(S\)</span>
-的串行调度中，<span class="math inline">\(T_1\)</span> 必须先于 <span
-class="math inline">\(T_2\)</span></li>
+<li>如果 $T_1$ 在计算 count(*) 时使用了 $T_2$ 新插入的元组，则 $T_1$ 就读取了被 $T_2$ 写入的一个值，因此在等价于 $S$ 的串行调度中，$T_2$ 必须先于 $T_1$</li>
+<li>如果 $T_1$ 在计算 count(*) 时并未使用 $T_2$ 新插入的元组，则在等价于 $S$ 的串行调度中，$T_1$ 必须先于 $T_2$</li>
 </ul>
-<p>第二中情况所防止的即为 <strong>幻象现象
-<code>phantom phenomenon</code></strong>，其根源在于谓词读取与插入或者更新相冲突，从而导致新/更新元组满足谓词。</p>
+<p>第二中情况所防止的即为 <strong>幻象现象 <code>phantom phenomenon</code></strong>，其根源在于谓词读取与插入或者更新相冲突，从而导致新/更新元组满足谓词。</p>
 <p>仅仅封锁要访问的元组是不够的，还必须封锁用来找到被事务锁访问的元组的信息。</p>
 
     </div>
@@ -550,11 +432,7 @@ class="math inline">\(T_2\)</span></li>
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1%E7%9A%84%E6%A6%82%E5%BF%B5"><span class="nav-number">1.</span> <span class="nav-text">事务的概念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1%E7%9A%84%E7%8A%B6%E6%80%81"><span class="nav-number">2.</span> <span class="nav-text">事务的状态</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1%E7%9A%84%E5%B1%9E%E6%80%A7"><span class="nav-number">3.</span> <span class="nav-text">事务的属性</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E5%AD%90%E6%80%A7-atomicity"><span class="nav-number">3.1.</span> <span class="nav-text">原子性
-Atomicity</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E8%87%B4%E6%80%A7-consistency"><span class="nav-number">3.2.</span> <span class="nav-text">一致性
-Consistency</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9A%94%E7%A6%BB%E6%80%A7-isolation"><span class="nav-number">3.3.</span> <span class="nav-text">隔离性
-Isolation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8C%81%E4%B9%85%E6%80%A7-durability"><span class="nav-number">3.4.</span> <span class="nav-text">持久性
-Durability</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1%E8%AF%BB%E5%86%99%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.</span> <span class="nav-text">事务读写模型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.</span> <span class="nav-text">事务插入删除模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%A0%E9%99%A4"><span class="nav-number">5.1.</span> <span class="nav-text">删除</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%92%E5%85%A5"><span class="nav-number">5.2.</span> <span class="nav-text">插入</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1%E7%9A%84%E9%9A%94%E7%A6%BB%E6%80%A7%E7%BA%A7%E5%88%AB"><span class="nav-number">6.</span> <span class="nav-text">事务的隔离性级别</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%93%E8%AF%8D%E8%AF%BB%E5%92%8C%E5%B9%BB%E5%83%8F"><span class="nav-number">6.1.</span> <span class="nav-text">谓词读和幻像</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1%E7%9A%84%E6%A6%82%E5%BF%B5"><span class="nav-number">1.</span> <span class="nav-text">事务的概念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1%E7%9A%84%E7%8A%B6%E6%80%81"><span class="nav-number">2.</span> <span class="nav-text">事务的状态</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1%E7%9A%84%E5%B1%9E%E6%80%A7"><span class="nav-number">3.</span> <span class="nav-text">事务的属性</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E5%AD%90%E6%80%A7-Atomicity"><span class="nav-number">3.1.</span> <span class="nav-text">原子性 Atomicity</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E8%87%B4%E6%80%A7-Consistency"><span class="nav-number">3.2.</span> <span class="nav-text">一致性 Consistency</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9A%94%E7%A6%BB%E6%80%A7-Isolation"><span class="nav-number">3.3.</span> <span class="nav-text">隔离性 Isolation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8C%81%E4%B9%85%E6%80%A7-Durability"><span class="nav-number">3.4.</span> <span class="nav-text">持久性 Durability</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1%E8%AF%BB%E5%86%99%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.</span> <span class="nav-text">事务读写模型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1%E6%8F%92%E5%85%A5%E5%88%A0%E9%99%A4%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.</span> <span class="nav-text">事务插入删除模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%A0%E9%99%A4"><span class="nav-number">5.1.</span> <span class="nav-text">删除</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%92%E5%85%A5"><span class="nav-number">5.2.</span> <span class="nav-text">插入</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1%E7%9A%84%E9%9A%94%E7%A6%BB%E6%80%A7%E7%BA%A7%E5%88%AB"><span class="nav-number">6.</span> <span class="nav-text">事务的隔离性级别</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%93%E8%AF%8D%E8%AF%BB%E5%92%8C%E5%B9%BB%E5%83%8F"><span class="nav-number">6.1.</span> <span class="nav-text">谓词读和幻像</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -568,7 +446,7 @@ Durability</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="n
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-count">8</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -580,7 +458,7 @@ Durability</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="n
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-count">7</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>

@@ -27,16 +27,18 @@
 <meta property="og:site_name" content="Zheng Xinrui">
 <meta property="og:description" content="As the most widespread dependency for recovery system, logging plays a quite important role in recovery. But it result in two or even more times of write amplification and more latency. So here let&#39;s">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://segmentfault.com/img/bVbaiNV">
-<meta property="og:image" content="https://segmentfault.com/img/bVbaiNI">
-<meta property="og:image" content="https://segmentfault.com/img/bVbairU">
+<meta property="og:image" content="https://bl-gs.github.io/2022/12/20/Logging/images/Logging/logging_prepare.png">
+<meta property="og:image" content="https://bl-gs.github.io/2022/12/20/Logging/images/Logging/logging_commit.png">
+<meta property="og:image" content="https://bl-gs.github.io/2022/12/20/Logging/images/Logging/logging_origin_sequence.png">
+<meta property="og:image" content="https://bl-gs.github.io/2022/12/20/Logging/images/Logging/logging_groupcommit_sequence.png">
+<meta property="og:image" content="https://bl-gs.github.io/2022/12/20/Logging/images/Logging/logging_schema_sequence.png">
 <meta property="article:published_time" content="2022-12-20T09:53:23.202Z">
-<meta property="article:modified_time" content="2022-12-20T09:57:04.294Z">
+<meta property="article:modified_time" content="2022-12-21T01:31:28.972Z">
 <meta property="article:author" content="Zheng Xinrui">
 <meta property="article:tag" content="Transaction">
 <meta property="article:tag" content="Logging">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://segmentfault.com/img/bVbaiNV">
+<meta name="twitter:image" content="https://bl-gs.github.io/2022/12/20/Logging/images/Logging/logging_prepare.png">
 
 <link rel="canonical" href="https://bl-gs.github.io/2022/12/20/Logging/">
 
@@ -196,10 +198,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">Posted on</span>
-              
 
-              <time title="Created: 2022-12-20 17:53:23 / Modified: 17:57:04" itemprop="dateCreated datePublished" datetime="2022-12-20T17:53:23+08:00">2022-12-20</time>
+              <time title="Created: 2022-12-20 17:53:23" itemprop="dateCreated datePublished" datetime="2022-12-20T17:53:23+08:00">2022-12-20</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2022-12-21 09:31:28" itemprop="dateModified" datetime="2022-12-21T09:31:28+08:00">2022-12-21</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -222,233 +230,112 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1 id="logging">Logging</h1>
-<h2 id="redo-log">Redo log</h2>
-<p>事务提交时，先写重做日志再修改页（WAL，write ahead log
-策略），当由于发生宕机而导致数据丢失时，就可以通过重做日志来完成数据的恢复。然后，按一定频率刷新到重做日志文件。</p>
-<h2 id="undo-log">Undo log</h2>
-<p>保存事务持久化前数据的样子，undo
-log有两个作用：提供回滚和多个行版本控制(MVCC)。</p>
-<h2 id="binlog">Binlog</h2>
-<p>Binlog
-用于记录数据库执行的写入性操作(不包括查询)信息，以二进制的形式保存在磁盘中。</p>
-<h2 id="binlog-与-undoredo-的不同">Binlog 与 Undo&amp;Redo 的不同</h2>
-<ul>
-<li><strong>操作的范围不同</strong>，Binlog
-会记录所有与MySQL数据库有关的日志记录，包括InnoDB、MyISAM等其他存储引擎的日志。而InnoDB存储引擎的
-Redo 日志只记录有关该存储引擎本身的事务日志。</li>
-<li><strong>记录的内容不同</strong>，无论用户将 Binlog 记录的格式设为
-STATEMENT、ROW 或
-MIXED，其记录的都是关于一个事务的具体操作内容，即该日志是逻辑日志。而
-Redo log 记录的是关于每个页的更改的物理情况。</li>
-<li><strong>写入的时间点不同</strong>，Binlog
-仅再事务提交前进行提交，即只写磁盘一次，不论这时该事务多大。而在事务进行的过程中，却不断有重做日志条目(Redo
-entry)被写入到重做日志文件中。</li>
+        <h1 id="Logging"><a href="#Logging" class="headerlink" title="Logging"></a>Logging</h1><h2 id="Redo-log"><a href="#Redo-log" class="headerlink" title="Redo log"></a>Redo log</h2><p>事务提交时，先写重做日志再修改页（WAL，write ahead log 策略），当由于发生宕机而导致数据丢失时，就可以通过重做日志来完成数据的恢复。然后，按一定频率刷新到重做日志文件。</p>
+<h2 id="Undo-log"><a href="#Undo-log" class="headerlink" title="Undo log"></a>Undo log</h2><p>保存事务持久化前数据的样子，undo log有两个作用：提供回滚和多个行版本控制(MVCC)。</p>
+<h2 id="Binlog"><a href="#Binlog" class="headerlink" title="Binlog"></a>Binlog</h2><p>Binlog 用于记录数据库执行的写入性操作(不包括查询)信息，以二进制的形式保存在磁盘中。</p>
+<h2 id="Binlog-与-Undo-amp-Redo-的不同"><a href="#Binlog-与-Undo-amp-Redo-的不同" class="headerlink" title="Binlog 与 Undo&amp;Redo 的不同"></a>Binlog 与 Undo&amp;Redo 的不同</h2><ul>
+<li><strong>操作的范围不同</strong>，Binlog 会记录所有与MySQL数据库有关的日志记录，包括InnoDB、MyISAM等其他存储引擎的日志。而InnoDB存储引擎的 Redo 日志只记录有关该存储引擎本身的事务日志。</li>
+<li><strong>记录的内容不同</strong>，无论用户将 Binlog 记录的格式设为 STATEMENT、ROW 或 MIXED，其记录的都是关于一个事务的具体操作内容，即该日志是逻辑日志。而 Redo log 记录的是关于每个页的更改的物理情况。</li>
+<li><strong>写入的时间点不同</strong>，Binlog 仅再事务提交前进行提交，即只写磁盘一次，不论这时该事务多大。而在事务进行的过程中，却不断有重做日志条目(Redo entry)被写入到重做日志文件中。</li>
 </ul>
-<p>binlog 日志只用于归档，只依靠binlog 是没有 crash-safe 能力的。但只有
-redo log 也不行，因为 redo log
-是InnoDB特有的，且日志上的记录落盘后会被覆盖掉。因此需要 binlog 和 redo
-log 二者同时记录，才能保证当数据库发生宕机重启时，数据不会丢失。</p>
-<h1 id="commit">Commit</h1>
-<h2 id="pc-二阶段提交">2PC 二阶段提交</h2>
-<p>为了性能考虑，每次提交事务的时候，只需要将 Redo 和 Undo
-刷下去就代表事务已经持久化了，而不需要等待数据落盘。由于 Undo
-的信息也会写入 Redo，所以其实我们只需要根据 Redo
-是否刷下去而决定崩溃时是重做还是回滚。</p>
-<p>开启 Binlog 后，还需要考虑 Binlog
-是否落盘（Binlog牵扯到主从数据一致性，全备恢复的位点）。根据事务是否成功写
-Binlog 决定事务的重做还是回滚。</p>
-<h3 id="两个阶段">两个阶段</h3>
-<ul>
-<li><p><code>prepare</code> 阶段，将 Redo
-日志持久化到磁盘，并将回滚段置为prepared状态，此时 Binlog 不做操作。</p>
-<figure>
-<img src="https://segmentfault.com/img/bVbaiNV" alt="clipboard.png" />
-<figcaption aria-hidden="true">clipboard.png</figcaption>
-</figure></li>
-<li><p><code>commit</code>
-阶段，设置提交状态，binlog持久化到磁盘，然后存储引擎层提交。</p>
-<figure>
-<img src="https://segmentfault.com/img/bVbaiNI" alt="clipboard.png" />
-<figcaption aria-hidden="true">clipboard.png</figcaption>
-</figure></li>
+<p>binlog 日志只用于归档，只依靠binlog 是没有 crash-safe 能力的。但只有 redo log 也不行，因为 redo log 是InnoDB特有的，且日志上的记录落盘后会被覆盖掉。因此需要 binlog 和 redo log 二者同时记录，才能保证当数据库发生宕机重启时，数据不会丢失。</p>
+<h1 id="Commit"><a href="#Commit" class="headerlink" title="Commit"></a>Commit</h1><h2 id="2PC-二阶段提交"><a href="#2PC-二阶段提交" class="headerlink" title="2PC 二阶段提交"></a>2PC 二阶段提交</h2><p>为了性能考虑，每次提交事务的时候，只需要将 Redo 和 Undo 刷下去就代表事务已经持久化了，而不需要等待数据落盘。由于 Undo 的信息也会写入 Redo，所以其实我们只需要根据 Redo 是否刷下去而决定崩溃时是重做还是回滚。</p>
+<p>开启 Binlog 后，还需要考虑 Binlog 是否落盘（Binlog牵扯到主从数据一致性，全备恢复的位点）。根据事务是否成功写 Binlog 决定事务的重做还是回滚。</p>
+<h3 id="两个阶段"><a href="#两个阶段" class="headerlink" title="两个阶段"></a>两个阶段</h3><ul>
+<li><p><code>prepare</code> 阶段，将 Redo 日志持久化到磁盘，并将回滚段置为prepared状态，此时 Binlog 不做操作。</p>
+<p>  <img src="images/Logging/logging_prepare.png" alt="prepare"></p>
+</li>
+<li><p><code>commit</code> 阶段，设置提交状态，binlog持久化到磁盘，然后存储引擎层提交。</p>
+<p>  <img src="images/Logging/logging_commit.png" alt="commit"></p>
+</li>
 </ul>
 <blockquote>
-<p>2PC 保证了事务在引擎层（redo）和 server
-层（binlog）之间的原子性。其中 binlog 作为XA协调器，即以 binlog
-是否成功写入磁盘作为事务提交的标志（innodb commit
-标志并不是事务成功与否的标志）。所以在崩溃恢复中也是以 redo log 中的 xid
-与 binlog 中的 xid 进行比较，如果 xid 在 binlog 中则提交，否则回滚。</p>
+<p>2PC 保证了事务在引擎层（redo）和 server 层（binlog）之间的原子性。其中 binlog 作为XA协调器，即以 binlog 是否成功写入磁盘作为事务提交的标志（innodb commit 标志并不是事务成功与否的标志）。所以在崩溃恢复中也是以 redo log 中的 xid 与 binlog 中的 xid 进行比较，如果 xid 在 binlog 中则提交，否则回滚。</p>
 </blockquote>
-<h3 id="崩溃恢复-no-binlog">崩溃恢复 (no Binlog)</h3>
-<p>由于未提交的事务和已回滚的事务也会记录到 Redo log
-中，因此在进行恢复的时候，这些事务要进行特殊的处理。进行恢复时，从checkpoint开始，重做所有事务（包括未提交的事务和已回滚的事务），然后通过
-Undo log 回滚那些未提交的事务。</p>
-<h3 id="崩溃恢复-with-binlog">崩溃恢复 (with Binlog)</h3>
-<ol type="1">
+<h3 id="崩溃恢复-no-Binlog"><a href="#崩溃恢复-no-Binlog" class="headerlink" title="崩溃恢复 (no Binlog)"></a>崩溃恢复 (no Binlog)</h3><p>由于未提交的事务和已回滚的事务也会记录到 Redo log 中，因此在进行恢复的时候，这些事务要进行特殊的处理。进行恢复时，从checkpoint开始，重做所有事务（包括未提交的事务和已回滚的事务），然后通过 Undo log 回滚那些未提交的事务。</p>
+<h3 id="崩溃恢复-with-Binlog"><a href="#崩溃恢复-with-Binlog" class="headerlink" title="崩溃恢复 (with Binlog)"></a>崩溃恢复 (with Binlog)</h3><ol>
 <li>扫描最后一个 Binlog，提取 xid（标识 Binlog 中的第几个event）</li>
-<li>xid 也会写到 Redo 中，将 Redo 中 prepare 状态的 xid，去跟最后一个
-Binlog 中的 xid 比较 ，如果 Binlog 中存在，则提交，否则回滚。</li>
+<li>xid 也会写到 Redo 中，将 Redo 中 prepare 状态的 xid，去跟最后一个 Binlog 中的 xid 比较 ，如果 Binlog 中存在，则提交，否则回滚。</li>
 </ol>
 <blockquote>
-<p>为什么只扫描最后一个 Binlog？因为 Binlog rotate 的时候会把前面的
-Binlog 都刷盘，而且事务是不会跨 Binlog 的。</p>
-<p>具体的，这个函数将最后一个 binlog 中完整写入的事务 XID 添加到一个
-hash，这些 XID 标志着对应的事务已经完成。实现上，遍历并解析 binlog
-文件中的每个 event，遇到 XID-event 时，将其中的 xid 提取出来并加入
-hash。</p>
-<p>接下来，通过 handler 接口中的 ha_recover 函数将这个 hash 传递给
-InnoDB，以此告诉 InnoDB 哪些事务需要回滚。</p>
-<p>在 InnoDB 拿到这个 hash 后，首先调用 innobase_xa_recover 函数得到
-InnoDB 中处于 prepared 状态的 xid 集合，然后遍历其中每个 prepared
-状态的事务，确定是否需要回滚</p>
+<p>为什么只扫描最后一个 Binlog？因为 Binlog rotate 的时候会把前面的 Binlog 都刷盘，而且事务是不会跨 Binlog 的。</p>
+<p>具体的，这个函数将最后一个 binlog 中完整写入的事务 XID 添加到一个 hash，这些 XID 标志着对应的事务已经完成。实现上，遍历并解析 binlog 文件中的每个 event，遇到 XID-event 时，将其中的 xid 提取出来并加入 hash。</p>
+<p>接下来，通过 handler 接口中的 ha_recover 函数将这个 hash 传递给 InnoDB，以此告诉 InnoDB 哪些事务需要回滚。</p>
+<p>在 InnoDB 拿到这个 hash 后，首先调用 innobase_xa_recover 函数得到 InnoDB 中处于 prepared 状态的 xid 集合，然后遍历其中每个 prepared 状态的事务，确定是否需要回滚</p>
 </blockquote>
-<h2 id="group-commit">Group Commit</h2>
-<p>若事务为非只读事务，则每次事务提交时需要进行一次刷数据的操作，以此保证重做日志都已经写入磁盘。</p>
-<p>日志的写入基本上是顺序IO。WAL(Write-Ahead-Logging)
-用顺序的日志写入代替数据的随机IO实现事务持久化。但是尽管如此，每次事务提交都需要日志刷盘，仍然受限于磁盘IO。group
-commit 的出现就是为了将日志（Redo/Binlog）刷盘的动作合并，从而提升 IO
-性能</p>
-<h3 id="事务提交顺序">事务提交顺序</h3>
-<p>2PC机制只能解决单个事务的 Redo/Binlog
-顺序一致的问题，但是对于并发事务还需要一些调整</p>
-<figure>
-<img src="https://segmentfault.com/img/bVbairU" alt="clipboard.png" />
-<figcaption aria-hidden="true">clipboard.png</figcaption>
-</figure>
-<p>如上图，事务按照T1、T2、T3顺序开始执行，将二进制日志（按照T1、T2、T3顺序）写入日志文件系统缓冲，调用
-fsync() 进行一次 group commit
-将日志文件永久写入磁盘，但是存储引擎提交的顺序为T2、T3、T1。当T2、T3提交事务之后，若通过在线物理备份进行数据库恢复来建立复制时，因为在
-InnoDB
-存储引擎层会检测事务T3在上下两层都完成了事务提交，不需要在进行恢复了，此时主备数据不一致</p>
-<p>MySQL 的内部 XA 机制保证了单个事务在 binlog 和 InnoDB
-之间的原子性，接下来我们需要考虑，在多个事务并发执行的情况下，怎么保证在
-binlog 和 redolog 中的顺序一致？</p>
-<h3 id="解决方法-一-上锁">解决方法 一 —— 上锁</h3>
-<p>对每个事务的 commit 过程上锁，只有当上一个事务 commit
-后释放锁，下个事务才可以进行 prepare
-操作，这样完全串行化的执行保证了顺序一致。</p>
-<p>问题是互斥的操作导致了严重的冲突，同时没能做到 group commit
-的优点。</p>
-<h3 id="解决方法-二-合并提交">解决方法 二 —— 合并提交</h3>
-<p>为了提高并发性能，肯定要细化锁粒度。</p>
-<p>2PC中的prepare阶段，会对redo进行一次持久化操作，这时候redo group
-commit的过程如下：</p>
-<ol type="1">
+<h2 id="Group-Commit"><a href="#Group-Commit" class="headerlink" title="Group Commit"></a>Group Commit</h2><p>若事务为非只读事务，则每次事务提交时需要进行一次刷数据的操作，以此保证重做日志都已经写入磁盘。</p>
+<p>日志的写入基本上是顺序IO。WAL(Write-Ahead-Logging) 用顺序的日志写入代替数据的随机IO实现事务持久化。但是尽管如此，每次事务提交都需要日志刷盘，仍然受限于磁盘IO。group commit 的出现就是为了将日志（Redo/Binlog）刷盘的动作合并，从而提升 IO 性能</p>
+<h3 id="事务提交顺序"><a href="#事务提交顺序" class="headerlink" title="事务提交顺序"></a>事务提交顺序</h3><p>2PC机制只能解决单个事务的 Redo/Binlog 顺序一致的问题，但是对于并发事务还需要一些调整</p>
+<p><img src="images/Logging/logging_origin_sequence.png" alt="origin sequence"></p>
+<p>如上图，事务按照T1、T2、T3顺序开始执行，将二进制日志（按照T1、T2、T3顺序）写入日志文件系统缓冲，调用 fsync() 进行一次 group commit 将日志文件永久写入磁盘，但是存储引擎提交的顺序为T2、T3、T1。当T2、T3提交事务之后，若通过在线物理备份进行数据库恢复来建立复制时，因为在 InnoDB 存储引擎层会检测事务T3在上下两层都完成了事务提交，不需要在进行恢复了，此时主备数据不一致 </p>
+<p>MySQL 的内部 XA 机制保证了单个事务在 binlog 和 InnoDB 之间的原子性，接下来我们需要考虑，在多个事务并发执行的情况下，怎么保证在 binlog 和 redolog 中的顺序一致？</p>
+<h3 id="解决方法-一-——-上锁"><a href="#解决方法-一-——-上锁" class="headerlink" title="解决方法 一 —— 上锁"></a>解决方法 一 —— 上锁</h3><p>对每个事务的 commit 过程上锁，只有当上一个事务 commit 后释放锁，下个事务才可以进行 prepare 操作，这样完全串行化的执行保证了顺序一致。</p>
+<p>问题是互斥的操作导致了严重的冲突，同时没能做到 group commit 的优点。</p>
+<h3 id="解决方法-二-——-合并提交"><a href="#解决方法-二-——-合并提交" class="headerlink" title="解决方法 二 —— 合并提交"></a>解决方法 二 —— 合并提交</h3><p>为了提高并发性能，肯定要细化锁粒度。</p>
+<p>2PC中的prepare阶段，会对redo进行一次持久化操作，这时候redo group commit的过程如下：</p>
+<ol>
 <li>获取 log_mutex</li>
 <li>若 flushed_to_disk_lsn &gt;= LSN，表示日志已经被刷盘,跳转5</li>
-<li>若 current_flush_lsn &gt;=
-LSN，表示日志正在刷盘中，跳转5后进入等待状态</li>
+<li>若 current_flush_lsn &gt;= LSN，表示日志正在刷盘中，跳转5后进入等待状态</li>
 <li>将小于 LSN 的日志刷盘(flush and sync)</li>
 <li>退出 log_mutex</li>
 </ol>
-<p>这个过程是根据 LSN 的顺序进行合并的，也就是说一次 redo group commit
-的过程可能会将别的未提交事务中的 LSN 也一并刷盘</p>
-<p>binlog 的组提交，prepare 阶段不变，只针对 commit 阶段，将 commit
-阶段拆分为三个过程：</p>
-<ol type="1">
-<li>flush stage：多个线程按进入的顺序将 binlog 从 cache
-写入文件（不刷盘）；</li>
-<li>sync stage：对 binlog 文件做 fsync 操作（多个线程的 binlog
-合并一次刷盘）；</li>
+<p>这个过程是根据 LSN 的顺序进行合并的，也就是说一次 redo group commit 的过程可能会将别的未提交事务中的 LSN 也一并刷盘</p>
+<p>binlog 的组提交，prepare 阶段不变，只针对 commit 阶段，将 commit 阶段拆分为三个过程：</p>
+<ol>
+<li>flush stage：多个线程按进入的顺序将 binlog 从 cache 写入文件（不刷盘）；</li>
+<li>sync stage：对 binlog 文件做 fsync 操作（多个线程的 binlog 合并一次刷盘）；</li>
 <li>commit stage：各个线程按顺序做 commit 操作。</li>
 </ol>
 <p>其中，每个阶段有 lock 进行保护，因此保证了事务写入的顺序。</p>
 <blockquote>
-<p>Group
-Commit技术将事务的提交阶段分成了Flush、Sync、Commit三个阶段，每个阶段维护一个队列，并且由该队列中第一个线程负责执行该步骤，这样实际上就达到了一次可以将一批事务的Binlog
-fsync到磁盘的目的，这样的一批同时提交的事务称为同一个Group的事务。</p>
+<p>Group Commit技术将事务的提交阶段分成了Flush、Sync、Commit三个阶段，每个阶段维护一个队列，并且由该队列中第一个线程负责执行该步骤，这样实际上就达到了一次可以将一批事务的Binlog fsync到磁盘的目的，这样的一批同时提交的事务称为同一个Group的事务。</p>
 </blockquote>
 <p>这种实现机制的巧妙之处在于：<strong>同一组提交的事务之间是不冲突的，因此可以并行回放</strong></p>
-<p>为了标记事务所属的组，MySQL5.7版本在产生Binlog日志时会有两个特殊的值记录在
-Binlog Event 中，last_committed 和 sequence_number，其中
-last_committed指的是该事务提交时，上一个事务提交的编号，sequence_number是事务提交的序列号，在一个Binlog文件内单调递增。如果两个事务的last_committed值一致，这两个事务就是在一个组内提交的。</p>
-<figure>
-<img
-src="https://yqfile.alicdn.com/625f2e1b05638501e74ca7203df7a32b849513a1.png"
-alt="_" />
-<figcaption aria-hidden="true">_</figcaption>
-</figure>
-<h3 id="解决方法-三-延迟-redo-log">解决方法 三 —— 延迟 Redo log</h3>
-<p>二中每个事务各自做 prepare 并写 redo log，只有到了 commit
-阶段才进入组提交，因此每个事务的 redo log sync 操作成为性能瓶颈。</p>
-<p>在二的基础上修改组提交的 flush 阶段，在 prepare
-阶段不再让线程各自执行 flush redo log 操作，而是推迟到组提交的 flush
-阶段，flush stage 修改成如下逻辑：</p>
-<ol type="1">
+<p>为了标记事务所属的组，MySQL5.7版本在产生Binlog日志时会有两个特殊的值记录在 Binlog Event 中，last_committed 和 sequence_number，其中 last_committed指的是该事务提交时，上一个事务提交的编号，sequence_number是事务提交的序列号，在一个Binlog文件内单调递增。如果两个事务的last_committed值一致，这两个事务就是在一个组内提交的。</p>
+<p><img src="images/Logging/logging_groupcommit_sequence.png" alt="group commit sequence"></p>
+<h3 id="解决方法-三-——-延迟-Redo-log"><a href="#解决方法-三-——-延迟-Redo-log" class="headerlink" title="解决方法 三 —— 延迟 Redo log"></a>解决方法 三 —— 延迟 Redo log</h3><p>二中每个事务各自做 prepare 并写 redo log，只有到了 commit 阶段才进入组提交，因此每个事务的 redo log sync 操作成为性能瓶颈。</p>
+<p>在二的基础上修改组提交的 flush 阶段，在 prepare 阶段不再让线程各自执行 flush redo log 操作，而是推迟到组提交的 flush 阶段，flush stage 修改成如下逻辑：</p>
+<ol>
 <li>收集组提交队列，得到 Leader 线程，其余 follower 线程进入阻塞；</li>
 <li>Leader 一次将所有线程的 redo log 刷盘；</li>
 <li>将队列中线程的所有 binlog cache 写到 binlog 文件中。</li>
 </ol>
-<p>这个优化是将 redo log 的刷盘延迟到了 binlog group commit 的 flush
-stage 之中，sync binlog 之前。通过延迟写 redolog 的方式，为 redo log
-做了一次组写入，这样 binlog 和 redo log 都进行了优化。</p>
-<h2 id="并行复制">并行复制</h2>
-<blockquote>
-<p>MySQL最早的主备复制只有两个线程，IO 线程负责从主库接收 binlog
-日志，并保存在本地的 relaylog 中，SQL线程负责解析和重放 relaylog 中的
-event。当主库并行写入压力较大时，备库 IO 线程一般不会产生延迟，因为写
-relaylog 是顺序写，但是 SQL
-线程重放的速度经常跟不上主库写入的速度，会造成主备延迟。如果延迟过大，relaylog
-一直在备库堆积，还可能把磁盘占满。</p>
+<p>这个优化是将 redo log 的刷盘延迟到了 binlog group commit 的 flush stage 之中，sync binlog 之前。通过延迟写 redolog 的方式，为 redo log 做了一次组写入，这样 binlog 和 redo log 都进行了优化。</p>
+<h2 id="并行复制"><a href="#并行复制" class="headerlink" title="并行复制"></a>并行复制</h2><blockquote>
+<p>MySQL最早的主备复制只有两个线程，IO 线程负责从主库接收 binlog 日志，并保存在本地的 relaylog 中，SQL线程负责解析和重放 relaylog 中的 event。当主库并行写入压力较大时，备库 IO 线程一般不会产生延迟，因为写 relaylog 是顺序写，但是 SQL 线程重放的速度经常跟不上主库写入的速度，会造成主备延迟。如果延迟过大，relaylog 一直在备库堆积，还可能把磁盘占满。</p>
 </blockquote>
-<h3 id="schema-级别的并行复制">Schema 级别的并行复制</h3>
-<p>开启并行复制后，会启动多个 Worker 线程，原有的 SQL 线程变为
-Coordinator 线程。</p>
-<p>可以并行的事务分发给 Worker 线程执行；不能并行的事务等待 Worker
-线程全部结束后，再由 Coordinator 线程自己执行。</p>
-<p>这种并行复制的模式，对于多个 DB
-同时更新才能有较高的并行度，但是更常见的情况是更新集中在同个一个
-DB。</p>
-<p>把 Schema 级别的并行复制改成 Table
-级别，可以大幅度提高单库多表环境下的并行度。但是对于只有一个热点表的情况依然处理不了。</p>
-<figure>
-<img
-src="https://yqfile.alicdn.com/504a6591690115ed221f0e2014ac9ec1ec0aed58.png"
-alt="_" />
-<figcaption aria-hidden="true">_</figcaption>
-</figure>
-<h3 id="基于-group-commit-的并行复制">基于 Group Commit 的并行复制</h3>
-<p>这种实现机制的巧妙之处在于：<strong>同一组提交的事务之间是不冲突的，因此可以并行回放</strong></p>
-<p>引入 Group Commit 之前，Binlog 和 InnoDB
-中的日志提交是串行提交的（如在 prepare 阶段提交 Redo 日志，在 commit
-阶段才提交 Binlog）</p>
-<p>但是引入 Group Commit 后，将其分为了三个阶段，可以并发执行。同时写
-Binlog 和 InnoDB commit 都是按照队列中的顺序，可以保证 Binlog
-和事务提交顺序一致。</p>
+<h3 id="Schema-级别的并行复制"><a href="#Schema-级别的并行复制" class="headerlink" title="Schema 级别的并行复制"></a>Schema 级别的并行复制</h3><p>开启并行复制后，会启动多个 Worker 线程，原有的 SQL 线程变为 Coordinator 线程。</p>
+<p>可以并行的事务分发给 Worker 线程执行；不能并行的事务等待 Worker 线程全部结束后，再由 Coordinator 线程自己执行。</p>
+<p>这种并行复制的模式，对于多个 DB 同时更新才能有较高的并行度，但是更常见的情况是更新集中在同个一个 DB。</p>
+<p>把 Schema 级别的并行复制改成 Table 级别，可以大幅度提高单库多表环境下的并行度。但是对于只有一个热点表的情况依然处理不了。</p>
+<p><img src="images/Logging/logging_schema_sequence.png" alt="schema sequence"></p>
+<h3 id="基于-Group-Commit-的并行复制"><a href="#基于-Group-Commit-的并行复制" class="headerlink" title="基于 Group Commit 的并行复制"></a>基于 Group Commit 的并行复制</h3><p>这种实现机制的巧妙之处在于：<strong>同一组提交的事务之间是不冲突的，因此可以并行回放</strong></p>
+<p>引入 Group Commit 之前，Binlog 和 InnoDB 中的日志提交是串行提交的（如在 prepare 阶段提交 Redo 日志，在 commit 阶段才提交 Binlog）</p>
+<p>但是引入 Group Commit 后，将其分为了三个阶段，可以并发执行。同时写 Binlog 和 InnoDB commit 都是按照队列中的顺序，可以保证 Binlog 和事务提交顺序一致。</p>
 <blockquote>
 <p>这里的并行复制还有一点点弊端，如果如果主库并行度低，那么备库回放时也很难并行。</p>
 <ul>
-<li>设置等待延迟提交的时间，Binlog 提交后等待一段时间再 fsync。让每个
-group 的事务更多，人为提高并行度。</li>
-<li>设置等待提交的最大事务数，如果等待时间没到，而事务数达到了，就立即
-fsync。达到期望的并行度后立即提交，尽量缩小等待延迟。</li>
+<li>设置等待延迟提交的时间，Binlog 提交后等待一段时间再 fsync。让每个 group 的事务更多，人为提高并行度。</li>
+<li>设置等待提交的最大事务数，如果等待时间没到，而事务数达到了，就立即 fsync。达到期望的并行度后立即提交，尽量缩小等待延迟。</li>
 </ul>
 <p>其他优化：</p>
 <p>即使主库在串行提交的事务，只有互相不冲突，在备库就可以并行回放。</p>
 </blockquote>
 <p>缺点：每组提交事务要足够多。当业务量比较小，并发度不够时，并行复制依然会退化为单线程复制。</p>
-<h3 id="基于-writeset-的并行复制">基于 WriteSet 的并行复制</h3>
-<p>简单来说，WriteSet并行复制的思想是：<strong>不同事务的不同记录不重叠，则都可在从机上并行回放</strong>，可以看到并行的力度从组提交细化为记录级。</p>
+<h3 id="基于-WriteSet-的并行复制"><a href="#基于-WriteSet-的并行复制" class="headerlink" title="基于 WriteSet 的并行复制"></a>基于 WriteSet 的并行复制</h3><p>简单来说，WriteSet并行复制的思想是：<strong>不同事务的不同记录不重叠，则都可在从机上并行回放</strong>，可以看到并行的力度从组提交细化为记录级。</p>
 <p>具体实现来看：</p>
-<p>WriteSet 可以是将每条记录 Hash 后的值，产生的 WriteSet
-对象会插入到WriteSet 哈希表。</p>
-<p>当事务每次提交时，会计算修改的每个行记录的WriteSet值，然后查找哈希表中是否已经存在有同样的WriteSet，若无，WriteSet
-插入到哈希表，写入二进制日志的 last_committed 值不变。若有，则
-last_committed 值更新为 sequnce_number。</p>
-<p>回放时和基于组提交的并行复制一样，具有相同的 last_committed
-值可以并行回放，但是由于是基于WriteSet机制的，因此不同的记录能并行执行。同一条记录回放，last_committed值必然不同，必须等待之前的一条记录回放完成后才能执行。</p>
-<h1 id="binlog-in-redo">Binlog in Redo</h1>
-<pre class="mermaid">graph LR
+<p>WriteSet 可以是将每条记录 Hash 后的值，产生的 WriteSet 对象会插入到WriteSet 哈希表。</p>
+<p>当事务每次提交时，会计算修改的每个行记录的WriteSet值，然后查找哈希表中是否已经存在有同样的WriteSet，若无，WriteSet 插入到哈希表，写入二进制日志的 last_committed 值不变。若有，则 last_committed 值更新为 sequnce_number。</p>
+<p>回放时和基于组提交的并行复制一样，具有相同的 last_committed 值可以并行回放，但是由于是基于WriteSet机制的，因此不同的记录能并行执行。同一条记录回放，last_committed值必然不同，必须等待之前的一条记录回放完成后才能执行。</p>
+<h1 id="Binlog-in-Redo"><a href="#Binlog-in-Redo" class="headerlink" title="Binlog in Redo"></a>Binlog in Redo</h1><pre class="mermaid">graph LR
     Prepare --> Sync_Redo
     Sync_Redo --> Write_Binlog
     Write_Binlog --> Sync_Binlog
     Sync_Binlog --> Commit</pre>
-<p>如上图所示，在事务的提交过程中有两次存储IO的写操作。第一次是 Redo
-的写操作，将事务的Prepare 状态持久化。第二次是 Binlog 的写操作，将事务的
-Binlog Events 持久化。</p>
-<p>Binlog in Redo 尝试将其压缩为一次 IO 过程。它去掉了 Binlog Sync，将
-Binlog 写入 Redo log 中。</p>
+
+<p>如上图所示，在事务的提交过程中有两次存储IO的写操作。第一次是 Redo 的写操作，将事务的Prepare 状态持久化。第二次是 Binlog 的写操作，将事务的 Binlog Events 持久化。</p>
+<p>Binlog in Redo 尝试将其压缩为一次 IO 过程。它去掉了 Binlog Sync，将 Binlog 写入 Redo log 中。</p>
 <pre class="mermaid">graph LR
     subgraph User_Session
         Prepare --> Write_Binlog_To_Redo --> Write_Binlog --> Sync_Redo --> Commit
@@ -465,14 +352,11 @@ Binlog 写入 Redo log 中。</p>
     Write_Binlog_To_Redo --> Binlog_Record
     Write_Binlog --> Tx_Events
     Sync_Binlog --> Tx_Events</pre>
+
 <ul>
-<li>当事务提交时，将事务的 Binlog Events 写入到 Redo 中，然后将 Redo
-持久化。</li>
-<li>而 Binlog
-文件则采用异步的方式，用单独的线程周期性的持久化到存储中。</li>
-<li>在主机宕机发生时，Binlog 中可能会丢失 Binlog Events.
-重新启动时，Recovery过程会用 Redo Log中的Binlog
-Events来补齐Binlog文件。</li>
+<li>当事务提交时，将事务的 Binlog Events 写入到 Redo 中，然后将 Redo 持久化。</li>
+<li>而 Binlog 文件则采用异步的方式，用单独的线程周期性的持久化到存储中。</li>
+<li>在主机宕机发生时，Binlog 中可能会丢失 Binlog Events. 重新启动时，Recovery过程会用 Redo Log中的Binlog Events来补齐Binlog文件。</li>
 </ul>
 <p>这个设计从数据保护上保持了双1配置的含义，从性能上则去掉了Binlog的刷盘。</p>
 
@@ -559,7 +443,7 @@ Events来补齐Binlog文件。</li>
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#logging"><span class="nav-number">1.</span> <span class="nav-text">Logging</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#redo-log"><span class="nav-number">1.1.</span> <span class="nav-text">Redo log</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#undo-log"><span class="nav-number">1.2.</span> <span class="nav-text">Undo log</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#binlog"><span class="nav-number">1.3.</span> <span class="nav-text">Binlog</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#binlog-%E4%B8%8E-undoredo-%E7%9A%84%E4%B8%8D%E5%90%8C"><span class="nav-number">1.4.</span> <span class="nav-text">Binlog 与 Undo&amp;Redo 的不同</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#commit"><span class="nav-number">2.</span> <span class="nav-text">Commit</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pc-%E4%BA%8C%E9%98%B6%E6%AE%B5%E6%8F%90%E4%BA%A4"><span class="nav-number">2.1.</span> <span class="nav-text">2PC 二阶段提交</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%A4%E4%B8%AA%E9%98%B6%E6%AE%B5"><span class="nav-number">2.1.1.</span> <span class="nav-text">两个阶段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B4%A9%E6%BA%83%E6%81%A2%E5%A4%8D-no-binlog"><span class="nav-number">2.1.2.</span> <span class="nav-text">崩溃恢复 (no Binlog)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B4%A9%E6%BA%83%E6%81%A2%E5%A4%8D-with-binlog"><span class="nav-number">2.1.3.</span> <span class="nav-text">崩溃恢复 (with Binlog)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#group-commit"><span class="nav-number">2.2.</span> <span class="nav-text">Group Commit</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1%E6%8F%90%E4%BA%A4%E9%A1%BA%E5%BA%8F"><span class="nav-number">2.2.1.</span> <span class="nav-text">事务提交顺序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95-%E4%B8%80-%E4%B8%8A%E9%94%81"><span class="nav-number">2.2.2.</span> <span class="nav-text">解决方法 一 —— 上锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95-%E4%BA%8C-%E5%90%88%E5%B9%B6%E6%8F%90%E4%BA%A4"><span class="nav-number">2.2.3.</span> <span class="nav-text">解决方法 二 —— 合并提交</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95-%E4%B8%89-%E5%BB%B6%E8%BF%9F-redo-log"><span class="nav-number">2.2.4.</span> <span class="nav-text">解决方法 三 —— 延迟 Redo log</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B9%B6%E8%A1%8C%E5%A4%8D%E5%88%B6"><span class="nav-number">2.3.</span> <span class="nav-text">并行复制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#schema-%E7%BA%A7%E5%88%AB%E7%9A%84%E5%B9%B6%E8%A1%8C%E5%A4%8D%E5%88%B6"><span class="nav-number">2.3.1.</span> <span class="nav-text">Schema 级别的并行复制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E-group-commit-%E7%9A%84%E5%B9%B6%E8%A1%8C%E5%A4%8D%E5%88%B6"><span class="nav-number">2.3.2.</span> <span class="nav-text">基于 Group Commit 的并行复制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E-writeset-%E7%9A%84%E5%B9%B6%E8%A1%8C%E5%A4%8D%E5%88%B6"><span class="nav-number">2.3.3.</span> <span class="nav-text">基于 WriteSet 的并行复制</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#binlog-in-redo"><span class="nav-number">3.</span> <span class="nav-text">Binlog in Redo</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Logging"><span class="nav-number">1.</span> <span class="nav-text">Logging</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Redo-log"><span class="nav-number">1.1.</span> <span class="nav-text">Redo log</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Undo-log"><span class="nav-number">1.2.</span> <span class="nav-text">Undo log</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Binlog"><span class="nav-number">1.3.</span> <span class="nav-text">Binlog</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Binlog-%E4%B8%8E-Undo-amp-Redo-%E7%9A%84%E4%B8%8D%E5%90%8C"><span class="nav-number">1.4.</span> <span class="nav-text">Binlog 与 Undo&amp;Redo 的不同</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Commit"><span class="nav-number">2.</span> <span class="nav-text">Commit</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#2PC-%E4%BA%8C%E9%98%B6%E6%AE%B5%E6%8F%90%E4%BA%A4"><span class="nav-number">2.1.</span> <span class="nav-text">2PC 二阶段提交</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%A4%E4%B8%AA%E9%98%B6%E6%AE%B5"><span class="nav-number">2.1.1.</span> <span class="nav-text">两个阶段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B4%A9%E6%BA%83%E6%81%A2%E5%A4%8D-no-Binlog"><span class="nav-number">2.1.2.</span> <span class="nav-text">崩溃恢复 (no Binlog)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B4%A9%E6%BA%83%E6%81%A2%E5%A4%8D-with-Binlog"><span class="nav-number">2.1.3.</span> <span class="nav-text">崩溃恢复 (with Binlog)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Group-Commit"><span class="nav-number">2.2.</span> <span class="nav-text">Group Commit</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1%E6%8F%90%E4%BA%A4%E9%A1%BA%E5%BA%8F"><span class="nav-number">2.2.1.</span> <span class="nav-text">事务提交顺序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95-%E4%B8%80-%E2%80%94%E2%80%94-%E4%B8%8A%E9%94%81"><span class="nav-number">2.2.2.</span> <span class="nav-text">解决方法 一 —— 上锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95-%E4%BA%8C-%E2%80%94%E2%80%94-%E5%90%88%E5%B9%B6%E6%8F%90%E4%BA%A4"><span class="nav-number">2.2.3.</span> <span class="nav-text">解决方法 二 —— 合并提交</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95-%E4%B8%89-%E2%80%94%E2%80%94-%E5%BB%B6%E8%BF%9F-Redo-log"><span class="nav-number">2.2.4.</span> <span class="nav-text">解决方法 三 —— 延迟 Redo log</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B9%B6%E8%A1%8C%E5%A4%8D%E5%88%B6"><span class="nav-number">2.3.</span> <span class="nav-text">并行复制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Schema-%E7%BA%A7%E5%88%AB%E7%9A%84%E5%B9%B6%E8%A1%8C%E5%A4%8D%E5%88%B6"><span class="nav-number">2.3.1.</span> <span class="nav-text">Schema 级别的并行复制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E-Group-Commit-%E7%9A%84%E5%B9%B6%E8%A1%8C%E5%A4%8D%E5%88%B6"><span class="nav-number">2.3.2.</span> <span class="nav-text">基于 Group Commit 的并行复制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E-WriteSet-%E7%9A%84%E5%B9%B6%E8%A1%8C%E5%A4%8D%E5%88%B6"><span class="nav-number">2.3.3.</span> <span class="nav-text">基于 WriteSet 的并行复制</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Binlog-in-Redo"><span class="nav-number">3.</span> <span class="nav-text">Binlog in Redo</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -573,7 +457,7 @@ Events来补齐Binlog文件。</li>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-count">8</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -585,7 +469,7 @@ Events来补齐Binlog文件。</li>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-count">7</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>

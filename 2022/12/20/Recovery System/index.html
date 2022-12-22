@@ -218,12 +218,9 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1 id="恢复系统">恢复系统</h1>
-<p>最常用的恢复技术是基于日志记录的
-<code>log-based recovery</code>。</p>
+        <h1 id="恢复系统"><a href="#恢复系统" class="headerlink" title="恢复系统"></a>恢复系统</h1><p>最常用的恢复技术是基于日志记录的 <code>log-based recovery</code>。</p>
 <blockquote>
-<p><strong>影子拷贝</strong>
-<code>shadow-copy</code>，被用于文本编辑器而不是数据库系统中</p>
+<p><strong>影子拷贝</strong> <code>shadow-copy</code>，被用于文本编辑器而不是数据库系统中</p>
 <p>想要更新数据库的事务首先创建数据库的一个完整拷贝。所有更新都在数据库的这个新拷贝上进行，而不去动那个原来的拷贝（影子拷贝）</p>
 <p>如果在任何时间点上事务需要被中止，系统仅仅删除这个新拷贝。</p>
 <p>数据库的当前拷贝由一个指针来标识，称为数据库指针，存放在磁盘上。</p>
@@ -233,179 +230,99 @@
 <li>数据库系统原子更新数据库指针，让它指向数据库的新拷贝。（事务已经提交）</li>
 <li>删掉数据库的旧拷贝。</li>
 </ul>
-<p><strong>影子分页</strong> <code>shadow-paging</code>
-为影子拷贝的一个变种。采用一个页表来保存指向所有页面的指针，事务没有更新的任何页面都不拷贝，新的页表只存储一个指向原来页面的指针，从而减少拷贝的代价。但是对于并发事务效果并不是很好，并没有被广泛使用。</p>
+<p><strong>影子分页</strong> <code>shadow-paging</code> 为影子拷贝的一个变种。采用一个页表来保存指向所有页面的指针，事务没有更新的任何页面都不拷贝，新的页表只存储一个指向原来页面的指针，从而减少拷贝的代价。但是对于并发事务效果并不是很好，并没有被广泛使用。</p>
 </blockquote>
-<p> </p>
-<h1 id="日志记录">日志记录</h1>
-<p><strong>更新日志记录 <code>update log record</code></strong>
-描述一次数据库写操作，具有以下字段：</p>
+<p>&nbsp;</p>
+<h1 id="日志记录"><a href="#日志记录" class="headerlink" title="日志记录"></a>日志记录</h1><p><strong>更新日志记录 <code>update log record</code></strong> 描述一次数据库写操作，具有以下字段：</p>
 <ul>
-<li>事务标识(transaction identifier) 是执行 write
-操作的事务的唯一标识</li>
-<li>数据项标识(data-item identifier)
-是所写数据项的唯一标识。通常是数据项在磁盘上的位置。</li>
+<li>事务标识(transaction identifier) 是执行 write 操作的事务的唯一标识</li>
+<li>数据项标识(data-item identifier) 是所写数据项的唯一标识。通常是数据项在磁盘上的位置。</li>
 <li>旧值 (old value) 是数据项的写前值</li>
 <li>新值 (new value) 是数据项的写后值</li>
 </ul>
 <p>还有其他专门的日志记录用于记录事务处理过程中的重要事件，如事务的开始以及事务的提交或中止。</p>
 <p>当事务执行写操作时，在数据库被修改前创建该写操作的日志记录并把它加到日志中。为了从系统故障和磁盘故障中恢复时能够使用日志记录，日志必须存放在稳定存储器中。</p>
-<p> </p>
-<h2 id="数据库修改">数据库修改</h2>
-<p>考虑事务在进行数据项修改中执行的步骤：</p>
+<p>&nbsp;</p>
+<h2 id="数据库修改"><a href="#数据库修改" class="headerlink" title="数据库修改"></a>数据库修改</h2><p>考虑事务在进行数据项修改中执行的步骤：</p>
 <ul>
 <li>事务在主存中自己私有的那部分空间执行某些计算</li>
 <li>事务修改主存的磁盘缓冲区中包含该数据项的数据块</li>
 <li>数据库系统执行 output 操作，将数据块写到磁盘中</li>
 </ul>
 <p>如果一个事务执行了对磁盘缓存快或磁盘本身的修改，我们说这个事务<em>修改了数据库</em>。</p>
-<p>如果一个事务直至提交时都没有修改数据库，则说它采用了 <strong>延迟修改
-<code>deferred-modification</code></strong> 技术</p>
-<p>如果一个事务仍然活跃时就发生了数据库修改，则说它采用了
-<strong>立即修改 <code>immediate-modification</code></strong> 技术</p>
+<p>如果一个事务直至提交时都没有修改数据库，则说它采用了 <strong>延迟修改 <code>deferred-modification</code></strong> 技术</p>
+<p>如果一个事务仍然活跃时就发生了数据库修改，则说它采用了 <strong>立即修改 <code>immediate-modification</code></strong> 技术</p>
 <p>延迟修改的开销是，事务需要作更新过的所有数据项的本地拷贝；并且，如果一个事务读它更新过的数据项，必须从本地拷贝中读取。</p>
 <p>恢复算法需要考虑多种因素，比如：</p>
 <ul>
 <li>有可能一个事务已经提交了，虽然它所作的某些数据库修改还仅仅存在于主存的磁盘缓冲区中</li>
 <li>有可能处于活跃状态的事务已经修改了数据库，而后来发生的故障导致这个事务需要中止。</li>
 </ul>
-<p>由于执行所有数据库修改之前必须先创建日志记录，所以系统可以使用数据项修改强的旧值和要写给数据项的新值。这就要求系统能够作适当的
-<strong>撤销</strong> 和 <strong>重做</strong> 操作</p>
+<p>由于执行所有数据库修改之前必须先创建日志记录，所以系统可以使用数据项修改强的旧值和要写给数据项的新值。这就要求系统能够作适当的 <strong>撤销</strong> 和 <strong>重做</strong> 操作</p>
 <ul>
 <li>撤销操作使用一条日志记录，将该日志记录中指定的数据项置为日志记录中包含的旧值</li>
 <li>重做操作使用一条日志记录，将该日志记录中指定的数据项置为日志记录中包含的新值</li>
 </ul>
-<p> </p>
-<h1 id="并发控制与恢复">并发控制与恢复</h1>
-<blockquote>
-<p>如果并发控制机制允许被一个事务 <span
-class="math inline">\(T_1\)</span> 修改过的数据项 X 在 <span
-class="math inline">\(T_1\)</span> 提交前进而被另一个事务 <span
-class="math inline">\(T_2\)</span> 修改，那么通过将 X
-重置为它的旧值（<span class="math inline">\(T_1\)</span> 更新之前 X
-的值）来撤销 <span class="math inline">\(T_1\)</span>
-的影响的同时也会撤销 <span class="math inline">\(T_2\)</span>
-的影响。</p>
-<p>为避免这种情况，恢复算法通常要求如果一个数据项被一个事务修改了，那么在该事务提交或中止前不允许其他事务修改该数据项。</p>
+<p>&nbsp;</p>
+<h1 id="并发控制与恢复"><a href="#并发控制与恢复" class="headerlink" title="并发控制与恢复"></a>并发控制与恢复</h1><blockquote>
+<p>如果并发控制机制允许被一个事务 $T_1$ 修改过的数据项 X 在 $T_1$ 提交前进而被另一个事务 $T_2$ 修改，那么通过将 X 重置为它的旧值（$T_1$ 更新之前 X 的值）来撤销 $T_1$ 的影响的同时也会撤销 $T_2$ 的影响。</p>
+<p>为避免这种情况，恢复算法通常要求如果一个数据项被一个事务修改了，那么在该事务提交或中止前不允许其他事务修改该数据项。 </p>
 <p>这一要求可以通过对被更新的任意数据项获取排他锁并且持有该锁直到事务提交来保证。</p>
 </blockquote>
-<p> </p>
-<h2 id="事务提交">事务提交</h2>
-<p>当一个事务的 commit
-日志记录（最后一条日志记录）被输出到稳定存储器后，我们就说这个事务
-<strong>提交</strong>
-了。此时。于是日志中就有足够的信息来保证：即使发生系统崩溃，事务所作的更新也可以被重做。</p>
-<p>如果崩溃发生在 commit
-日志记录输出到稳定存储器之前，事务将被回滚。</p>
-<p> </p>
-<h2 id="使用日志重做和撤销事务">使用日志重做和撤销事务</h2>
-<p>使用日志，系统可以应对任何故障，恢复机制使用两个恢复机制，这两个过程都利用日志来找到每个事务
-<span class="math inline">\(T_i\)</span>
-更新过的数据项的集合，以及它们相应的旧值和新值</p>
+<p>&nbsp;</p>
+<h2 id="事务提交"><a href="#事务提交" class="headerlink" title="事务提交"></a>事务提交</h2><p>当一个事务的 commit 日志记录（最后一条日志记录）被输出到稳定存储器后，我们就说这个事务 <strong>提交</strong> 了。此时。于是日志中就有足够的信息来保证：即使发生系统崩溃，事务所作的更新也可以被重做。</p>
+<p>如果崩溃发生在 commit 日志记录输出到稳定存储器之前，事务将被回滚。</p>
+<p>&nbsp;</p>
+<h2 id="使用日志重做和撤销事务"><a href="#使用日志重做和撤销事务" class="headerlink" title="使用日志重做和撤销事务"></a>使用日志重做和撤销事务</h2><p>使用日志，系统可以应对任何故障，恢复机制使用两个恢复机制，这两个过程都利用日志来找到每个事务 $T_i$ 更新过的数据项的集合，以及它们相应的旧值和新值</p>
 <ul>
-<li><strong>redo(<span class="math inline">\(T_i\)</span>)</strong>
-该过程将事务 <span class="math inline">\(T_i\)</span>
-更新过的数据项的值都置为新值。通过重做来<strong>执行更新的顺序</strong>是非常重要的。大多数的恢复算法，都没有把每个事务的重做单独的执行，而是对日志进行一次扫描，在扫描过程中每遇到一条日志记录就执行重做动作。这样能够保证更新顺序，同时效率更高。</li>
-<li><strong>undo(<span class="math inline">\(T_i\)</span>)</strong>
-该过程将事务 <span class="math inline">\(T_i\)</span>
-更新过的所有数据项都恢复为旧值。与重做过程相似，执行更新的顺序也是很重要的。在撤销过程中使用此类日志进行记录时，“旧值”实际上时正在回滚的事务写入的值，“新值”是正在通过撤销操作恢复的原始值。在对于事务
-<span class="math inline">\(T_i\)</span> 的撤销操作完成之后，写一条
-abort 日志记录，表明undo完成。</li>
+<li><strong>redo($T_i$)</strong> 该过程将事务 $T_i$ 更新过的数据项的值都置为新值。通过重做来<strong>执行更新的顺序</strong>是非常重要的。大多数的恢复算法，都没有把每个事务的重做单独的执行，而是对日志进行一次扫描，在扫描过程中每遇到一条日志记录就执行重做动作。这样能够保证更新顺序，同时效率更高。</li>
+<li><strong>undo($T_i$)</strong> 该过程将事务 $T_i$ 更新过的所有数据项都恢复为旧值。与重做过程相似，执行更新的顺序也是很重要的。在撤销过程中使用此类日志进行记录时，“旧值”实际上时正在回滚的事务写入的值，“新值”是正在通过撤销操作恢复的原始值。在对于事务 $T_i$ 的撤销操作完成之后，写一条 abort 日志记录，表明undo完成。</li>
 </ul>
-<p>如果事务在正常的处理过程中被回滚，或者在系统崩溃后的恢复中既没有发现事务
-<span class="math inline">\(T_i\)</span> 的commit记录，也没有发现它的
-abort 记录，则 undo(<span class="math inline">\(T_i\)</span>)
-过程对每个事务只执行一次。结果是每个事务的日志中最终会有一条 commit
-记录或者一条 abort 记录。</p>
+<p>如果事务在正常的处理过程中被回滚，或者在系统崩溃后的恢复中既没有发现事务 $T_i$ 的commit记录，也没有发现它的 abort 记录，则 undo($T_i$) 过程对每个事务只执行一次。结果是每个事务的日志中最终会有一条 commit 记录或者一条 abort 记录。</p>
 <p>发生系统崩溃之后，系统需要查阅日志以确定哪些事务需要重做，哪些事务需要撤消</p>
 <ul>
-<li>如果日志中包含 start 记录，但是既不包含 commit 记录，也不包含 abort
-记录，这样的事务 <span class="math inline">\(T_i\)</span>
-需要进行<em>撤消</em>。</li>
-<li>如果日志中包含 start 记录，以及 commit 记录或者 abort
-记录，这样的事务需要进行重做。（对具有abort记录的事务进行重做，是因为其日志中含有为撤销所创建的read-only记录，因此相当于做了撤销操作）</li>
+<li>如果日志中包含 start 记录，但是既不包含 commit 记录，也不包含 abort 记录，这样的事务 $T_i$ 需要进行<em>撤消</em>。</li>
+<li>如果日志中包含 start 记录，以及 commit 记录或者 abort 记录，这样的事务需要进行重做。（对具有abort记录的事务进行重做，是因为其日志中含有为撤销所创建的read-only记录，因此相当于做了撤销操作）</li>
 </ul>
-<p> </p>
-<h2 id="检查点">检查点</h2>
-<p>当系统发生故障时，我们必须查阅日志，决定哪些事务需要重做或者撤销。原则上，需要搜索整个日志来确定上述信息。</p>
-<ol type="1">
+<p>&nbsp;</p>
+<h2 id="检查点"><a href="#检查点" class="headerlink" title="检查点"></a>检查点</h2><p>当系统发生故障时，我们必须查阅日志，决定哪些事务需要重做或者撤销。原则上，需要搜索整个日志来确定上述信息。</p>
+<ol>
 <li>搜索过程太耗时</li>
 <li>大多数需要重做的事务已经将其更新写入了数据库中。无需再重做一次。</li>
 </ol>
 <p>为降低这种开销，引入 <strong>检查点</strong></p>
 <p>执行过程如下：</p>
-<ol type="1">
+<ol>
 <li>将当前位于主存的所有日志输出到稳定存储器</li>
 <li>将所有修改过的缓冲块输出到磁盘</li>
-<li>将一条形如 checkpoint L 的日志记录输出到稳定存储器，其中 L
-是执行检查点时活跃的事务列表。</li>
+<li>将一条形如 checkpoint L 的日志记录输出到稳定存储器，其中 L 是执行检查点时活跃的事务列表。</li>
 </ol>
-<p>检查点执行时，不允许事务执行任何更新动作，如往缓冲块中写入或写日志记录。系统崩溃时，检查日志找到最后一条
-checkpoint L 记录。然后对 L 中的事务作 undo 或者 redo 操作。</p>
-<p>检查点机制加快了恢复过程的效率。考虑再检查点前已经完成的事务 <span
-class="math inline">\(T_i\)</span>。对于这样的事务，在日志中 <span
-class="math inline">\(T_i\)</span> commit 记录（或者 abort 记录）出现在
-checkpoint 之前。 <span class="math inline">\(T_i\)</span>
-所做的任何数据库修改都必然已经在检查点前或作为检查点本身的一部分写入数据库。因此，在恢复时就无需重做
-<span class="math inline">\(T_i\)</span></p>
-<p> </p>
-<h2 id="恢复算法">恢复算法</h2>
-<p>首先考虑正常操作时的<strong>事务回滚</strong>。事务 <span
-class="math inline">\(T_i\)</span> 的回滚执行如下：</p>
+<p>检查点执行时，不允许事务执行任何更新动作，如往缓冲块中写入或写日志记录。系统崩溃时，检查日志找到最后一条 checkpoint L 记录。然后对 L 中的事务作 undo 或者 redo 操作。</p>
+<p>检查点机制加快了恢复过程的效率。考虑再检查点前已经完成的事务 $T_i$。对于这样的事务，在日志中 $T_i$ commit 记录（或者 abort 记录）出现在 checkpoint 之前。 $T_i$ 所做的任何数据库修改都必然已经在检查点前或作为检查点本身的一部分写入数据库。因此，在恢复时就无需重做 $T_i$</p>
+<p>&nbsp;</p>
+<h2 id="恢复算法"><a href="#恢复算法" class="headerlink" title="恢复算法"></a>恢复算法</h2><p>首先考虑正常操作时的<strong>事务回滚</strong>。事务 $T_i$ 的回滚执行如下：</p>
 <ul>
-<li>从后向前扫描日志，对于所发现的 <span
-class="math inline">\(T_i\)</span> 的每条形如 &lt;<span
-class="math inline">\(T_i, X_j, V_1, V2\)</span>&gt;的日志记录
-<ul>
-<li>将值 <span class="math inline">\(V_1\)</span> 写到数据项 <span
-class="math inline">\(X_j\)</span></li>
-<li>往日志中写一条特殊的 redo-only 日志记录 &lt;<span
-class="math inline">\(T_i, X_j, V_1\)</span>&gt;，其中 <span
-class="math inline">\(V_1\)</span> 是在本次回滚中数据项 <span
-class="math inline">\(X_j\)</span> 被恢复成的值。称为
-<strong>补偿日志记录(compensation log
-record)</strong>。这种日志记录中不需要 undo 信息。</li>
-</ul></li>
-<li>一旦发现了 &lt;<span class="math inline">\(T_i\)</span> start&gt;
-日志记录，就停止方向扫描，并往日志中加入 &lt;<span
-class="math inline">\(T_i\)</span> abort&gt; 日志记录。</li>
+<li>从后向前扫描日志，对于所发现的 $T_i$ 的每条形如 &lt;$T_i, X_j, V_1, V2$&gt;的日志记录<ul>
+<li>将值 $V_1$ 写到数据项 $X_j$</li>
+<li>往日志中写一条特殊的 redo-only 日志记录 &lt;$T_i, X_j, V_1$&gt;，其中 $V_1$ 是在本次回滚中数据项 $X_j$ 被恢复成的值。称为 <strong>补偿日志记录(compensation log record)</strong>。这种日志记录中不需要 undo 信息。</li>
+</ul>
+</li>
+<li>一旦发现了 &lt;$T_i$ start&gt; 日志记录，就停止方向扫描，并往日志中加入 &lt;$T_i$ abort&gt; 日志记录。</li>
 </ul>
 <p>然后考虑系统崩溃后的恢复：当崩溃发生后数据库重启时，恢复动作分两阶段进行：</p>
-<ol type="1">
-<li><p>在
-<strong>重做阶段</strong>，系统通过最后一个检查点开始正向扫描日志来重演所有事务的更新。被重演的日志记录包括在系统崩溃前已被回滚的事务的日志记录。以及在系统崩溃发生时还没有提交的事务的日志记录。</p>
-<p>扫描日志的过程中所采取的具体步骤如下：</p>
-<ol type="a">
-<li><p>将待回滚事务的列表 undo-list 初始化为 checkout L 日志记录中的列表
-L</p></li>
-<li><p>一旦遇到 &lt;<span class="math inline">\(T_i, X_j, V_1,
-V2\)</span>&gt; 的正常日志记录，或 &lt;<span class="math inline">\(T_i,
-X_j, V_1\)</span>&gt; 的 read-only 日志记录，就执行重做操作，即将 <span
-class="math inline">\(V_2\)</span> 赋予 <span
-class="math inline">\(X_j\)</span></p></li>
-<li><p>一旦发现形为 &lt;<span class="math inline">\(T_i\)</span>
-start&gt; 的日志记录，就把 <span class="math inline">\(T_i\)</span> 加入
-undo-list 中。</p></li>
-<li><p>一旦发现形为 &lt;<span class="math inline">\(T_i\)</span>
-abort&gt; 或 &lt;<span class="math inline">\(T_i\)</span> commit&gt;
-的日志记录，就把 <span class="math inline">\(T_i\)</span>
-从undo-list中去掉。</p></li>
-</ol></li>
-<li><p>在 <strong>撤销阶段</strong>，系统回滚 undo-list
-中的所有事务。它通过从尾端开始反向扫描日志来执行回滚。</p>
-<ol type="a">
-<li><p>一旦发现属于 undo-list
-中事务的日志记录，就执行撤销动作，就像在一个失败事务的回滚过程中发现了该日志记录一样。</p></li>
-<li><p>当系统发现 undo-list 中的事务 <span
-class="math inline">\(T_i\)</span> 的 &lt;<span
-class="math inline">\(T_i\)</span> start&gt;
-日志记录，它就往日志中写一条 &lt;<span
-class="math inline">\(T_i\)</span> abort&gt; 日志记录，并把 <span
-class="math inline">\(T_i\)</span> 从 undo-list 去掉。</p></li>
-</ol>
-<p>c.一旦 undo-list 变为空，即系统已经找到了初始位于 undo-list
-中的所有事务的 &lt;<span class="math inline">\(T_i\)</span> start&gt;
-日志记录，则撤销阶段结束。</p></li>
+<ol>
+<li><p>在 <strong>重做阶段</strong>，系统通过最后一个检查点开始正向扫描日志来重演所有事务的更新。被重演的日志记录包括在系统崩溃前已被回滚的事务的日志记录。以及在系统崩溃发生时还没有提交的事务的日志记录。</p>
+<p> 扫描日志的过程中所采取的具体步骤如下：</p>
+<p> a. 将待回滚事务的列表 undo-list 初始化为 checkout L 日志记录中的列表 L</p>
+<p> b. 一旦遇到 &lt;$T_i, X_j, V_1, V2$&gt; 的正常日志记录，或 &lt;$T_i, X_j, V_1$&gt; 的 read-only 日志记录，就执行重做操作，即将 $V_2$ 赋予 $X_j$</p>
+<p> c. 一旦发现形为 &lt;$T_i$ start&gt; 的日志记录，就把 $T_i$ 加入 undo-list 中。</p>
+<p> d. 一旦发现形为 &lt;$T_i$ abort&gt; 或 &lt;$T_i$ commit&gt; 的日志记录，就把 $T_i$ 从undo-list中去掉。</p>
+</li>
+<li><p>在 <strong>撤销阶段</strong>，系统回滚 undo-list 中的所有事务。它通过从尾端开始反向扫描日志来执行回滚。</p>
+<p> a. 一旦发现属于 undo-list 中事务的日志记录，就执行撤销动作，就像在一个失败事务的回滚过程中发现了该日志记录一样。</p>
+<p> b. 当系统发现 undo-list 中的事务 $T_i$ 的 &lt;$T_i$ start&gt; 日志记录，它就往日志中写一条 &lt;$T_i$ abort&gt; 日志记录，并把 $T_i$ 从 undo-list 去掉。</p>
+<p> c.一旦 undo-list 变为空，即系统已经找到了初始位于 undo-list 中的所有事务的 &lt;$T_i$ start&gt; 日志记录，则撤销阶段结束。</p>
+</li>
 </ol>
 
     </div>
@@ -505,7 +422,7 @@ class="math inline">\(T_i\)</span> 从 undo-list 去掉。</p></li>
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-count">8</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -517,7 +434,7 @@ class="math inline">\(T_i\)</span> 从 undo-list 去掉。</p></li>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-count">7</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>

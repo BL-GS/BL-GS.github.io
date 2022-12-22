@@ -244,8 +244,13 @@ Cache 中数据位的作用：
 
 ### Crash Recovery
 
-* 重建索引和 NVM 空间管理数据结构
-* 对于没有 LP 位的版本数据，就是没有提交成功的。首先得到最大的已提交事务的时间戳，然后通过和那个最大时间戳比，得到所有已经提交的 tuple。（有方法能够只扫描一遍，Algorithm 2 详见论文3.3.3）
+* 重建索引和 NVM 空间管理数据结构，其他的比如 Met-Cache 就不需要恢复了。
+* 对于没有 LP 位的版本数据，就是没有提交成功的。首先得到最大的已提交事务的时间戳，然后通过和那个最大时间戳比，得到所有已经提交的 tuple。
+* 提出了一个算法能够扫描一遍得出所有未提交事务，同时建立索引 Algorithm2
+	* 扫描一遍，当遇到一个有 LP 位的 tuple 时，令 ts-commit = max(ts-commit, cts)。同时更新索引。如果对应 tuple 索引已经存在，则比较 cts 留下最新的那个。
+	* 扫描期间，遇到了 timestamp > ts-commit 的，放在一个列表 pending list 里
+	* 扫描完成后，此时 ts-commit 为已提交事务的最大 cts。
+	* 扫描完成后，对 pending list 中所有 tuple，再次扫描，所有 timestamp > ts-commit 的都是未提交成功的。而对于那些提交成功的，更新索引。
 
 
 &nbsp;

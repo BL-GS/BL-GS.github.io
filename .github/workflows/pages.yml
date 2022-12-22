@@ -21,10 +21,20 @@ jobs:
           key: ${{ runner.OS }}-npm-cache
           restore-keys: |
             ${{ runner.OS }}-npm-cache
+
       - name: Install Dependencies
         run: npm install
+
+      # Install pandoc for mathjax
+      - name: Install pandoc
+        run: |
+          cd /tmp
+          wget -c https://github.com/jgm/pandoc/releases/download/2.18/pandoc-2.18-1-amd64.deb
+          sudo dpkg -i pandoc-2.18-1-amd64.deb
+
       - name: Build
         run: npm run build
+        
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:

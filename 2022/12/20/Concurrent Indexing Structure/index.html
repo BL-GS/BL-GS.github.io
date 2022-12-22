@@ -30,8 +30,8 @@
 <meta property="article:published_time" content="2022-12-20T09:58:07.355Z">
 <meta property="article:modified_time" content="2022-12-20T10:02:19.841Z">
 <meta property="article:author" content="Zheng Xinrui">
-<meta property="article:tag" content="Transaction">
 <meta property="article:tag" content="Structure">
+<meta property="article:tag" content="Transaction">
 <meta name="twitter:card" content="summary">
 
 <link rel="canonical" href="https://bl-gs.github.io/2022/12/20/Concurrent%20Indexing%20Structure/">
@@ -218,49 +218,62 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1 id="并发协议"><a href="#并发协议" class="headerlink" title="并发协议"></a>并发协议</h1><p>可以将对索引结构的访问当作像对其他任何数据库结构的访问，并应用前面讨论过的并发控制技术。然而，由于索引经常被访问，会成为一个很大的锁争用点，从而导致较低的并发程度。</p>
+        <h1 id="并发协议">并发协议</h1>
+<p>可以将对索引结构的访问当作像对其他任何数据库结构的访问，并应用前面讨论过的并发控制技术。然而，由于索引经常被访问，会成为一个很大的锁争用点，从而导致较低的并发程度。</p>
 <p>尽快以非两阶段的方式来释放索引锁、以最大限度地提高并发度是可取的。</p>
 <blockquote>
 <p>索引操作的 <strong>操作可串行化</strong> ：</p>
 <p>如果存在一种操作的可串行化顺序与在并发执行中每个索引操作所看到的结果是一致的，并且与所有操作执行之后索引的最终状态也是一致的，则称在这个索引上的索引操作的并发执行是可串行化的。</p>
 </blockquote>
-<h1 id="在线索引创建"><a href="#在线索引创建" class="headerlink" title="在线索引创建"></a>在线索引创建</h1><blockquote>
+<h1 id="在线索引创建">在线索引创建</h1>
+<blockquote>
 <p>确保数据和索引一致性的一种方式是在创建索引时阻止对关系的更新，例如通过获得关系上的共享锁来实现。在创建了索引并更新了关系的元数据以反映索引的存在后，该锁可以被释放。随后的更新事务将找到索引，并作为事务的一部分来执行索引的维护。</p>
-<p>但是上述方法会使得系统在很长时间内无法对关系进行更新。许多数据库系统支持 <strong>在线索引创建</strong>，使得创建索引时也能够进行关系的更新</p>
+<p>但是上述方法会使得系统在很长时间内无法对关系进行更新。许多数据库系统支持
+<strong>在线索引创建</strong>，使得创建索引时也能够进行关系的更新</p>
 </blockquote>
-<ol>
+<ol type="1">
 <li>获取关系的一个快照并使用它来创建索引；同时系统会在快照创建之后所发生的对关系的所有更新都记录在日志中</li>
 <li>当快照数据上的索引完成之后，由于缺少后续的更新，因此该索引尚未准备好使用。此时对关系的更新日志被用于更新索引。（当执行索引更新时，在关系上可能会发生进一步的更新）</li>
 <li>索引更新因而获取关系上的共享锁以防止进一步更新，并将所有剩余更新应用于索引。（此时，索引和关系的内容是一致的），然后，更新关系的元数据以指示新索引的存在。最后释放对应的锁。</li>
 </ol>
-<h1 id="蟹行协议-crabbing-protocol"><a href="#蟹行协议-crabbing-protocol" class="headerlink" title="蟹行协议 crabbing protocol"></a>蟹行协议 <code>crabbing protocol</code></h1><p>是管理对 B+ 树并发访问的技术</p>
-<h2 id="具体做法"><a href="#具体做法" class="headerlink" title="具体做法"></a>具体做法</h2><ul>
-<li>在搜索一个键值时:<ul>
+<h1 id="蟹行协议-crabbing-protocol">蟹行协议
+<code>crabbing protocol</code></h1>
+<p>是管理对 B+ 树并发访问的技术</p>
+<h2 id="具体做法">具体做法</h2>
+<ul>
+<li>在搜索一个键值时:
+<ul>
 <li>蟹行协议首先以共享模式封锁根节点。</li>
 <li>沿树向下遍历时，在孩子节点上获得共享锁，随后释放在父节点上的锁。直到到达叶子节点。</li>
-</ul>
-</li>
-<li>在插入或者删除一个键值时：<ul>
+</ul></li>
+<li>在插入或者删除一个键值时：
+<ul>
 <li>采取与搜索相同的协议直到到达对应的叶子节点。</li>
 <li>用排他模式封锁该叶子节点，并且插入或删除该节点。</li>
 <li>若需要分裂或者需要和兄弟节点合并，或者需要在兄弟节点之间重新分配键值。用排他模式封锁该节点的父节点。执行完这些操作后，释放对应的锁。</li>
 <li>如果父节点需要分裂、合并或者重新分配键值，该协议保留父节点上的锁，并用相同的方式进一步向上传播，否则释放父节点上的锁。</li>
+</ul></li>
 </ul>
-</li>
-</ul>
-<h2 id="问题及解决方法"><a href="#问题及解决方法" class="headerlink" title="问题及解决方法"></a>问题及解决方法</h2><ul>
+<h2 id="问题及解决方法">问题及解决方法</h2>
+<ul>
 <li>可能产生死锁：通过释放操作所持有的锁再从树根重启搜索操作的方式，系统可以解决这种死锁。</li>
 </ul>
-<h1 id="B-link-树协议-B-link-tree-locking-protocol"><a href="#B-link-树协议-B-link-tree-locking-protocol" class="headerlink" title="B-link 树协议 B-link-tree locking protocol"></a>B-link 树协议 <code>B-link-tree locking protocol</code></h1><p>是管理对 B+ 树并发访问的技术</p>
-<h2 id="要求"><a href="#要求" class="headerlink" title="要求"></a>要求</h2><p>要求每个节点（包括内部节点）维护指向其右兄弟的指针。主要用作分裂时引发的查找操作。</p>
-<h2 id="具体做法-1"><a href="#具体做法-1" class="headerlink" title="具体做法"></a>具体做法</h2><p>在蟹行协议的基础上，在向下遍历或者向上遍历时，即请求子节点或者父节点上的锁之前，释放当前内部节点的锁。（这样避免的死锁，但是可能导致异常，协议要求检测和处理这些情况）</p>
-<h2 id="问题及解决方法-1"><a href="#问题及解决方法-1" class="headerlink" title="问题及解决方法"></a>问题及解决方法</h2><ul>
-<li>在没有检测到谓词读和插入或更新之间的冲突的情况下，会产生幻象现象：<ul>
+<h1 id="b-link-树协议-b-link-tree-locking-protocol">B-link 树协议
+<code>B-link-tree locking protocol</code></h1>
+<p>是管理对 B+ 树并发访问的技术</p>
+<h2 id="要求">要求</h2>
+<p>要求每个节点（包括内部节点）维护指向其右兄弟的指针。主要用作分裂时引发的查找操作。</p>
+<h2 id="具体做法-1">具体做法</h2>
+<p>在蟹行协议的基础上，在向下遍历或者向上遍历时，即请求子节点或者父节点上的锁之前，释放当前内部节点的锁。（这样避免的死锁，但是可能导致异常，协议要求检测和处理这些情况）</p>
+<h2 id="问题及解决方法-1">问题及解决方法</h2>
+<ul>
+<li>在没有检测到谓词读和插入或更新之间的冲突的情况下，会产生幻象现象：
+<ul>
 <li>可以通过索引封锁技术，用两阶段方式封锁索引的叶节点来防止幻象现象</li>
 <li>一些索引并发控制机制不封锁整个索引叶子节点，而是在单个键值上使用<strong>键值封锁</strong>，并允许从同一个叶子节点插入或删除其他键值。但是直接使用键值封锁还是会有幻象现象。</li>
-<li>可以使用 <code>next-key</code> 封锁技术。每次索引查找不仅必须封锁查找范围内找到的键值，而且必须封锁下一个键值，即刚好大于范围内最后一个键值的键值。</li>
-</ul>
-</li>
+<li>可以使用 <code>next-key</code>
+封锁技术。每次索引查找不仅必须封锁查找范围内找到的键值，而且必须封锁下一个键值，即刚好大于范围内最后一个键值的键值。</li>
+</ul></li>
 </ul>
 
     </div>
@@ -271,8 +284,8 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/Transaction/" rel="tag"># Transaction</a>
               <a href="/tags/Structure/" rel="tag"># Structure</a>
+              <a href="/tags/Transaction/" rel="tag"># Transaction</a>
           </div>
 
         
@@ -346,7 +359,9 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91%E5%8D%8F%E8%AE%AE"><span class="nav-number">1.</span> <span class="nav-text">并发协议</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8%E7%BA%BF%E7%B4%A2%E5%BC%95%E5%88%9B%E5%BB%BA"><span class="nav-number">2.</span> <span class="nav-text">在线索引创建</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%9F%B9%E8%A1%8C%E5%8D%8F%E8%AE%AE-crabbing-protocol"><span class="nav-number">3.</span> <span class="nav-text">蟹行协议 crabbing protocol</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%81%9A%E6%B3%95"><span class="nav-number">3.1.</span> <span class="nav-text">具体做法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="nav-number">3.2.</span> <span class="nav-text">问题及解决方法</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#B-link-%E6%A0%91%E5%8D%8F%E8%AE%AE-B-link-tree-locking-protocol"><span class="nav-number">4.</span> <span class="nav-text">B-link 树协议 B-link-tree locking protocol</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A6%81%E6%B1%82"><span class="nav-number">4.1.</span> <span class="nav-text">要求</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%81%9A%E6%B3%95-1"><span class="nav-number">4.2.</span> <span class="nav-text">具体做法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95-1"><span class="nav-number">4.3.</span> <span class="nav-text">问题及解决方法</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91%E5%8D%8F%E8%AE%AE"><span class="nav-number">1.</span> <span class="nav-text">并发协议</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8%E7%BA%BF%E7%B4%A2%E5%BC%95%E5%88%9B%E5%BB%BA"><span class="nav-number">2.</span> <span class="nav-text">在线索引创建</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%9F%B9%E8%A1%8C%E5%8D%8F%E8%AE%AE-crabbing-protocol"><span class="nav-number">3.</span> <span class="nav-text">蟹行协议
+crabbing protocol</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%81%9A%E6%B3%95"><span class="nav-number">3.1.</span> <span class="nav-text">具体做法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="nav-number">3.2.</span> <span class="nav-text">问题及解决方法</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#b-link-%E6%A0%91%E5%8D%8F%E8%AE%AE-b-link-tree-locking-protocol"><span class="nav-number">4.</span> <span class="nav-text">B-link 树协议
+B-link-tree locking protocol</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A6%81%E6%B1%82"><span class="nav-number">4.1.</span> <span class="nav-text">要求</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%81%9A%E6%B3%95-1"><span class="nav-number">4.2.</span> <span class="nav-text">具体做法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95-1"><span class="nav-number">4.3.</span> <span class="nav-text">问题及解决方法</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 

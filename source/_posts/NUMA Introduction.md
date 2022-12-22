@@ -48,9 +48,9 @@ description: Simple introduction of NUMA and some optimizations about it.
 
 我们可以通过 `lscpu` 或者 `numactl -hardware` 查看当前机器的 NUMA 分布：
 
-![image-20221216220906102](/images/NUMA%20Introduction/lscpu_result.png)
+![lscpu result](/images/NUMA%20Introduction/lscpu_result.png)
 
-![image-20221216220934534](/images/NUMA%20Introduction/numactl_result.png)
+![numactl result](/images/NUMA%20Introduction/numactl_result.png)
 
 可以看到，当前这台机器上共有四个 NUMA 节点，分别对应 [0-23，96-119],[24-47,120-143],[48-71,144-167],[72-95,168-191] ID 的逻辑 CPU，而每个 CPU socket 对应两个逻辑 CPU。
 
@@ -66,7 +66,7 @@ description: Simple introduction of NUMA and some optimizations about it.
 
 同样的，通过 `hwloc` 也能够检测到机器上的 NUMA 配置。在 CentOS 上执行 `lstopo --no-io topology.pdf` 就能够生成该机器的 NUMA 配置（依赖于 hwloc），如下所示：
 
-![](/images/NUMA%20Introduction/lstopo_result.png)
+![lstopo result](/images/NUMA%20Introduction/lstopo_result.png)
 
 能够看到总共有 4 个 NUMA 节点，同时每个节点包含 24 个物理 CPU，每个物理 CPU 包含 2 两个逻辑 CPU。每个 NUMA 节点掌管 94 GB 的本地内存空间。
 
@@ -380,7 +380,7 @@ After: thread: 3 with tid 139885195347712 on core 72
 
 即将所有 NUMA 节点作为一个整体进行资源的分配
 
-![image-20221218094601132](/images/NUMA%20Introduction/numa_strategy1.png)
+![numa strategy 1](/images/NUMA%20Introduction/numa_strategy1.png)
 
 优点是简单，不需要额外的判断处理
 
@@ -392,7 +392,7 @@ After: thread: 3 with tid 139885195347712 on core 72
 
 因此它的做法是对于读操作，允许当前 NUMA 节点的 CPU 读取其他任意节点的东西，但是写入操作只发生在当前 NUMA 节点的内存里。
 
-![image-20221218094952792](/images/NUMA%20Introduction/numa_strategy2.png)
+![numa strategy 2](/images/NUMA%20Introduction/numa_strategy2.png)
 
 优点是消灭了 remote write，尤其对于 NVM 来说，其写入操作的延迟要高很多。
 
@@ -400,11 +400,13 @@ After: thread: 3 with tid 139885195347712 on core 72
 
 ## 动态 Partition
 
-Zen+ 中提出一种在处理事务前先对其进行 **逻辑上的** NUMA 分块，对应事务会运行在分配给的 NUMA 节点上，然后程序根据不同 NUMA 节点的访问热度进行动态调整，使得其访问尽量地均衡。
+Zen+ 中提出一种在处理事务前先对其进行 逻辑上的 NUMA 分块，对应事务会运行在分配给的 NUMA 节点上，然后程序根据不同 NUMA 节点的访问热度进行动态调整，使得其访问尽量地均衡。
 
 当然，这是在全局读-本地写的基础上进行改动的。
 
-![image-20221218095401132](/images/NUMA%20Introduction/numa_strategy3.png)
+其实这种方式只适合于 Zen 这种本地写的事务内存，也就是所有的写操作都发生在线程对应的内存资源中。这样的话，NUMA 的最大限制来自于其事务分配线程的随机性。假如同一个键值的事务都能让同一个线程来进行，那样就能一直 NUMA local。但是这样对于集中访问比如 Zipfian 就很不友好，因为很多资源没有利用上。于是用软分块的方式（键值 Hash）将其分散到各个 NUMA 节点上。
+
+![numa strategy 3](/images/NUMA%20Introduction/numa_strategy3.png)
 
 具体的算法感觉不是很难但是较为繁琐，可以参照原论文中的代码进行理解。
 

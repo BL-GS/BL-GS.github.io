@@ -57,7 +57,7 @@ description: Indexing, a deduplicate structure, is used to accelerate transactio
 
 对于主文件中部分记录（形成的索引字段值），有索引项和它对应，这样的索引称 **非稠密索引** `undense index` 或 **稀疏索引** `sparse index`
 
-![image-20221220232323116](C:\Users\BL-GS\AppData\Roaming\Typora\typora-user-images\image-20221220232323116.png)
+![undense-sparse index](/images/Simple%20Indexing%20Introduction/undense-sparse%20index.png)
 
 &nbsp;
 
@@ -90,7 +90,7 @@ description: Indexing, a deduplicate structure, is used to accelerate transactio
 
 **主索引** 通常是对每一存储块有一个索引项，索引项的总数和存储表所占的存储块数目相同，存储表的每一存储块的第一条记录，又称为**锚记录** `anchor record` 或简称为**块锚** `block anchor`
 
-![image-20221220235341155](C:\Users\BL-GS\AppData\Roaming\Typora\typora-user-images\image-20221220235341155.png)
+![primary index](/images/Simple%20Indexing%20Introduction/primary%20index.png)
 
 * 主索引的索引字段值为块锚的索引字段值，而指针指向其所在的存储块
 * 主索引是按照索引字段值进行排序的一个有序文件，通常建立在主文件基于主码的排序字段上。
@@ -106,7 +106,7 @@ description: Indexing, a deduplicate structure, is used to accelerate transactio
 - 当非排序字段为索引字段时，如该字段值不唯一，则要采用一个类似链表的结构来保存包含该字段值的所有记录的位置。
 - 辅助索引是 **稠密索引**，其检索效率有时相当高。
 
-![image-20221220235817303](C:\Users\BL-GS\AppData\Roaming\Typora\typora-user-images\image-20221220235817303.png)
+![secondary index](/images/Simple%20Indexing%20Introduction/secondary%20index.png)
 
 
 

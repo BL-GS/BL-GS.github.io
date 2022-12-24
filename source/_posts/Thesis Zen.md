@@ -61,7 +61,7 @@ Zen+ 引入了：基于 MVCC 的适应性执行，NUMA-aware 的软分块(soft p
 
 ## MMDB (Main Memory Database)
 
-如 [图(a)](OLTP-Memory-Architecture)，当 OLTP 数据库的大小超过 DRAM 时，MMDB 将部分 NVM 视为 DRAM 使用，将部分的 tuple 和 索引放在 NVM 上。
+如 [图(a)](#OLTP-Memory-Architecture)，当 OLTP 数据库的大小超过 DRAM 时，MMDB 将部分 NVM 视为 DRAM 使用，将部分的 tuple 和 索引放在 NVM 上。
 
 但是恢复时依赖的仍然是 NVM 上的 Log 和检查点。
 
@@ -71,7 +71,7 @@ Zen+ 引入了：基于 MVCC 的适应性执行，NUMA-aware 的软分块(soft p
 
 ## WBL (Write-behind logging)
 
-如 [图(b)](OLTP-Memory-Architecture)，WBL 维持一个 tuple 的缓存。在事务执行过程中，tuple 从 tuple cache 中获取。同时 WBL 通过每个 tuple 的元数据（如 transaction ID，cts，版本指针）来支持在 NVM 上的多个版本。
+如 [图(b)](#OLTP-Memory-Architecture)，WBL 维持一个 tuple 的缓存。在事务执行过程中，tuple 从 tuple cache 中获取。同时 WBL 通过每个 tuple 的元数据（如 transaction ID，cts，版本指针）来支持在 NVM 上的多个版本。
 
 跟 WAL 不同，WBL log 不包括修改后的数据，日志在一系列事务提交后持久化。由于持久化需要内存屏障（SFENCE），因此当日志持久化后代表在其之前所有的事务都完成了。
 
@@ -85,7 +85,7 @@ Zen+ 引入了：基于 MVCC 的适应性执行，NUMA-aware 的软分块(soft p
 
 ## FOEDUS 
 
-如 [图(c)](OLTP-Memory-Architecture)，FOEDUS 将 tuple 存在 NVM 中的一个快照页中，在 DRAM 中创建一个页的 Cache。DRAM 中页的索引维护两个指针，一个指向 NVM 中的快照页，一个指向 DRAM 中页的 Cache。当　DRAM 中不存在对应 Cache，则从 NVM 载入。
+如 [图(c)](#OLTP-Memory-Architecture)，FOEDUS 将 tuple 存在 NVM 中的一个快照页中，在 DRAM 中创建一个页的 Cache。DRAM 中页的索引维护两个指针，一个指向 NVM 中的快照页，一个指向 DRAM 中页的 Cache。当　DRAM 中不存在对应 Cache，则从 NVM 载入。
 
 因此需要有一个垃圾回收机制回收不需要的快照。
 
@@ -97,7 +97,7 @@ Zen+ 引入了：基于 MVCC 的适应性执行，NUMA-aware 的软分块(soft p
 
 ## Zen
 
-如 [图(d)](OLTP-Memory-Architecture)，为 tuple 维护一个元数据 Cache，但是粒度比 FOEDUS 小，是 tuple 级别。相比于 WBL，它只在 Cache 上更改数据。
+如 [图(d)](#OLTP-Memory-Architecture)，为 tuple 维护一个元数据 Cache，但是粒度比 FOEDUS 小，是 tuple 级别。相比于 WBL，它只在 Cache 上更改数据。
 
 Zen 完全移除日志。同时还使用所谓的 light-weight NVM space allocation
 

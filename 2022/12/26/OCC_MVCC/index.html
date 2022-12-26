@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/logo.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/logo-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/log-16x16.png">
+  <link rel="mask-icon" href="/images/logo.png" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"bl-gs.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Simple introduction about OCC and MVCC.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="OCC &amp; MVCC">
+<meta property="og:url" content="https://bl-gs.github.io/2022/12/26/OCC_MVCC/index.html">
+<meta property="og:site_name" content="Zheng Xinrui">
+<meta property="og:description" content="Simple introduction about OCC and MVCC.">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-12-26T13:49:17.537Z">
+<meta property="article:modified_time" content="2022-12-26T15:58:00.486Z">
+<meta property="article:author" content="Zheng Xinrui">
+<meta property="article:tag" content="Concurrent Control">
+<meta property="article:tag" content="Transaction">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://bl-gs.github.io/2022/12/26/OCC_MVCC/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>OCC & MVCC | Zheng Xinrui</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+<!-- hexo injector head_end end --></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Zheng Xinrui</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Harbin Institute of Technology</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>Sitemap</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://bl-gs.github.io/2022/12/26/OCC_MVCC/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Zheng Xinrui">
+      <meta itemprop="description" content="This man is too lazy to introduce himself.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Zheng Xinrui">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          OCC & MVCC
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2022-12-26 21:49:17 / Modified: 23:58:00" itemprop="dateCreated datePublished" datetime="2022-12-26T21:49:17+08:00">2022-12-26</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Transaction/" itemprop="url" rel="index"><span itemprop="name">Transaction</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">Simple introduction about OCC and MVCC.</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="occ">OCC</h1>
+<p><strong>乐观并发控制协议 (Optimistic Concurrent Control,
+OCC)</strong>
+表示一种乐观并发控制的思想，只在事务提交时对事务是否符合串行化进行验证。</p>
+<blockquote>
+<p>与之相对的是 <strong>悲观并发控制 (Pessimistic Concurrent
+Control)</strong>，它会在事务执行的过程中每个操作进行串行化验证。比较典型的是
+2PL 机制</p>
+</blockquote>
+<p> </p>
+<h2 id="optimization-consideration">Optimization Consideration</h2>
+<p>在 OCC 提出来的年代，比较流行的是
+2PL，针对这一并发控制协议，主要有如下的问题：</p>
+<ol type="1">
+<li>加锁协议的开销大，对于只读事务也要加读锁保护。</li>
+<li>可能产生死锁，需要进行死锁预防或者检测和破除。</li>
+<li>持有锁的同时可能进行阻塞操作（I/O），降低了系统并发吞吐</li>
+<li>加锁事务回滚时也需要加锁，直到事务回滚结束</li>
+</ol>
+<p> </p>
+<h2 id="overview">Overview</h2>
+<p>OCC 将事务分为三个阶段：</p>
+<ul>
+<li><code>read phase</code>：读取记录，存储本地副本，修改副本上数据</li>
+<li><code>validation phase</code>：冲突检查，若存在冲突则 Abort</li>
+<li><code>write phase</code>：事务提交，将更新持久化</li>
+</ul>
+<p>用时间戳排序的技术来决定可串行化次序。</p>
+<p> </p>
+<h2 id="implementation">Implementation</h2>
+<p>为每个事务涉及的数据创建一个私有副本，所有的更新都在该副本上执行，最后提交时通过判断是否有冲突来决定是否能够提交事务。</p>
+<p>同时为了执行有效性检查，需要直到事务的各个阶段的开始时间，因此定义三个时间戳</p>
+<ul>
+<li><strong>StartTS(<span
+class="math inline">\(T_i\)</span>)</strong>：事务 <span
+class="math inline">\(T_i\)</span> 开始的时间</li>
+<li><strong>ValidationTS(<span
+class="math inline">\(T_i\)</span>)</strong>：事务 <span
+class="math inline">\(T_i\)</span>
+完成其读阶段并开始其有效性检查的时间</li>
+<li><strong>Finish(<span
+class="math inline">\(T_i\)</span>)</strong>：事务 <span
+class="math inline">\(T_i\)</span> 完成其写阶段的时间</li>
+</ul>
+<p>令 TS(<span class="math inline">\(T_i\)</span>) = ValidationTS(<span
+class="math inline">\(T_i\)</span>)，通过时间戳排序的技术来决定可串行化的次序。</p>
+<h3 id="read-phase">Read phase</h3>
+<p>该阶段将事务涉及的数据复制一份副本，放到本地工作空间，之后执行读操作读取本地的数据，写操作将被记录到本地工作空间的临时文件中。</p>
+<p>此时事务尚未提交，这些数据对其他事务不可见。</p>
+<h3 id="validation-phase">Validation phase</h3>
+<p>当事务准备提交时进入校验阶段，首先检查在此期间事务是否与其他事务产生冲突，如果没有产生冲突，则事务顺利提交；如果产生了冲突，则中止事务。</p>
+<p>事务 <span class="math inline">\(T_i\)</span> 的验证，要求满足
+TS(<span class="math inline">\(T_k\)</span>) &lt; TS(<span
+class="math inline">\(T_i\)</span>) 的所有事务 <span
+class="math inline">\(T_k\)</span>
+（事实上只需要考虑在该事务开始后仍然活跃的事务）必须满足下面两个条件之一：</p>
+<ul>
+<li><p>FinishTS(<span class="math inline">\(T_k\)</span>) &lt;
+StartTS(<span class="math inline">\(T_i\)</span>)。</p>
+<p>因此 <span class="math inline">\(T_k\)</span> 在 <span
+class="math inline">\(T_i\)</span>
+开始之前就完成了其执行，故可串行化次序是可保证的。</p></li>
+<li><p><span class="math inline">\(T_k\)</span> 所写的数据项集合与 <span
+class="math inline">\(T_i\)</span> 所读的数据项集合并
+<strong>不相交</strong>，并且在 <span class="math inline">\(T_i\)</span>
+开始其有效性检查阶段之前，<span class="math inline">\(T_k\)</span>
+就完成了其写阶段 StartTS(<span class="math inline">\(T_i\)</span>) &lt;
+FinishTS(<span class="math inline">\(T_k\)</span>) &lt;
+ValidationTS(<span class="math inline">\(T_i\)</span>)</p>
+<p>这个条件保证 <span class="math inline">\(T_k\)</span> 和 <span
+class="math inline">\(T_i\)</span> 的写不重叠。因为 <span
+class="math inline">\(T_k\)</span> 的写不影响 <span
+class="math inline">\(T_i\)</span> 的读，又因为 <span
+class="math inline">\(T_i\)</span> 不可能影响 <span
+class="math inline">\(T_k\)</span> 的读，从而保证了串行化次序。</p></li>
+</ul>
+<blockquote>
+<p>有效性检查的机制自动预防了级联回滚，因为只有发出写操作的事务提交之后实际的写才会发生。</p>
+</blockquote>
+<h3 id="write-phase-commit-phase">Write phase / Commit phase</h3>
+<p>如果成功通过校验阶段，那么该阶段将会把本地工作空间中的数据永久地写到数据库或存储中持久化存储，完成整个事务。对于只读事务，则忽略该阶段。</p>
+<p> </p>
+<h2 id="advantage-properties">Advantage &amp; Properties</h2>
+<p>OCC 适合冲突率较低、短事务的场景。OCC仅支持包括{read-only, update}
+transaction, 很显然, 不支持多次交互的conversational事务.</p>
+<ul>
+<li><strong>读写冲突</strong>：写入的数据没有提交前是不可见的，所以读取的还是写入前的数据，所以没有冲突</li>
+<li><strong>写读冲突</strong>：读的事务在验证阶段会发现自己读的数据被最近提交的事务修改过，读事务会回滚</li>
+<li><strong>脏读</strong>：未提交的数据不会被其他事务读到，因此不会发生脏读</li>
+<li><strong>写写覆盖</strong>：事务的顺序是按照提交的顺序决定的，先开始的事务先提交，后开始的事务后提交，因此不会发生先开始的事务覆盖后开始的事务数据的问题</li>
+</ul>
+<p> </p>
+<h2 id="problem">Problem</h2>
+<p>乐观并发控制多数用于数据竞争(data
+race)不大、冲突较少的环境中，这种环境中，偶尔回滚事务的成本会低于读取数据时锁定数据的成本，因此可以获得比其他并发控制方法更高的吞吐量。</p>
+<ul>
+<li><p>可能导致长事务饿死</p>
+<p>原因是短事务可能会经常和长事务冲突导致其崩溃，可以通过暂时阻塞冲突事务来解决饥饿问题。</p></li>
+<li><p>每次读取数据都需要把数据拷贝到本地空间，读取效率较低</p></li>
+<li><p>并行度不高</p></li>
+</ul>
+<p> </p>
+<h2 id="optimizations">Optimizations</h2>
+<p>OCC 的原始版本中，三个阶段
+<code>read phase</code>、<code>validation phase</code>、<code>write phase</code>。其中
+read phase 允许并行进行，而 validation phase 和 write phase
+作为整体串行进行。只需要检查 RAW 依赖。</p>
+<ul>
+<li><p>Read/Write 并发、Validation 串行</p>
+<p>需要检查 RAW 和 WAW（写覆盖问题）依赖。可参考 <a
+target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/35098431">OCC系列之二: 两种简单的实现
+- 知乎 (zhihu.com)</a></p></li>
+<li><p>Validation 并发</p></li>
+<li><p>Validation 进一步并发（通过 CAS 指令或者其他策略）</p></li>
+</ul>
+<p>同时对于冲突的检查，也有不同的做法：</p>
+<ul>
+<li>检查 read set 和 write set</li>
+<li>只检查 write set，如 Omid</li>
+<li>只检查 read set，如 Silo 和 TicToc</li>
+</ul>
+<p>   </p>
+<h1 id="silo-tictoc">Silo &amp; TicToc</h1>
+<p>Silo 和 TicToc 都是在 OCC 的基础上实现 Validation 并行化的 OCC
+变种。当然在实现上会有其他的优化，此处仅就其事务逻辑进行分析。</p>
+<p> </p>
+<h2 id="overview-1">Overview</h2>
+<p>将事务操作的对象记录视为一个四元组 (key, value, tid, lock)</p>
+<ul>
+<li><code>key</code>：tuple 的主键</li>
+<li><code>value</code>：tuple 的值</li>
+<li><code>tid</code>：最后一次更新该记录的事务 TID</li>
+<li><code>lock</code>：锁</li>
+</ul>
+<p>在 read phase 和其他 OCC 协议类似</p>
+<p>在 validation 阶段，具有较为宽松的事务 TID
+分配机制，只保证修改同一条记录的两个事务的 TID 不同即可。</p>
+<p>同时需要做一些额外的依赖检测</p>
+<p> </p>
+<h2 id="implementation-1">Implementation</h2>
+<h3 id="tid-allocation">TID Allocation</h3>
+<p>对于 Silo 中，只需要满足：</p>
+<ul>
+<li>当前 epoch 分配的时间戳一定小于下一个 epoch 分配的.</li>
+<li>同一个工作线程中, 分配的时间戳严格单调递增.</li>
+<li>修改同一条记录的事务, 时间戳严格单调递增.</li>
+</ul>
+<p>对于 TicToc 中，只需要满足：</p>
+<ul>
+<li>时间戳分配, 由记录的 WTS 和 RTS 推算出, 只能保证偏序关系.</li>
+<li>write set无交集的两个事务的时间戳无法反应修改的前后顺序.</li>
+</ul>
+<h3 id="validation">Validation</h3>
+<ul>
+<li>对 write set 中所有记录上锁。需要注意的是，可以按照 key
+的顺序进行加锁，避免死锁。</li>
+<li>检查 read set 中是否存在被其他线程修改过的痕迹，假如有就崩溃。</li>
+<li>分配 TID 并且提交</li>
+</ul>
+<p>伪代码如下[4]：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// input: write_set, read_set;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// VALIDATION PHASE</span></span><br><span class="line"><span class="comment">// lock record in write set one by one in primary key order</span></span><br><span class="line"><span class="function"><span class="keyword">for</span> r in <span class="title">sortedByKey</span><span class="params">(write_set)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">lock</span>(r)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">valid = <span class="literal">true</span></span><br><span class="line"><span class="keyword">for</span> r in read_set &#123;</span><br><span class="line">    <span class="comment">// anti-dependency conflict check</span></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">isModifiedOrLockedByAnotherTransaction</span>(r) &#123;</span><br><span class="line">        valid = <span class="literal">false</span></span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">tid = <span class="number">-1</span></span><br><span class="line"><span class="keyword">if</span> valid &#123;</span><br><span class="line">    <span class="comment">// allocate globally unique TID</span></span><br><span class="line">    tid = <span class="built_in">allocateTID</span>()</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// abort and release all lock</span></span><br><span class="line">    <span class="keyword">for</span> r in write_set &#123;</span><br><span class="line">        <span class="built_in">unlock</span>(r)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">abort</span>()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// WRITE PHASE</span></span><br><span class="line"><span class="keyword">for</span> r in write_set &#123;</span><br><span class="line">    <span class="comment">//establish new value and release locks.</span></span><br><span class="line">    <span class="built_in">install</span>(r, tid)</span><br><span class="line">    <span class="built_in">unlock</span>(r)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> </p>
+<h2 id="问题4">问题[4]</h2>
+<ol type="1">
+<li>锁已被其他事务持有而无法授予当前事务.
+当前事务可以选择wait和no-wait两种策略. 可能造成饥饿问题。</li>
+<li>记录锁的粒度太小导致开销过大. 每条记录都有一把锁, 当记录数量极大时,
+维护锁需要的内存就越大。</li>
+<li>如果更新事务的write操作touch很多记录, 在竞争激烈的情况下,
+冲突率上升导致延迟增大或者abort rate上升.</li>
+<li>install新副本的延迟过长影响并发性能, 所以这种方式不利于磁盘数据库,
+而且日志落盘也应该采用group commit, 应该采用多个日志,
+在内存中保存多个log tail, 减低并发事务竞争写log tail引起的同步代价.</li>
+<li>分配 TID 可能需要原子操作</li>
+</ol>
+<p>   </p>
+<h1 id="mvcc">MVCC</h1>
+<p>OCC 每次读取都需要把数据拷贝到本地空间，为了解决这个问题，MVCC
+通过对一个 Logical tuple 存储多个版本的 Physical tuple。</p>
+<blockquote>
+<p>需要注意的是这里的 Logical 和 Physical 关系。对于一个关系 tuple，MVCC
+中会有多个版本的 tuple 与之对应，但是逻辑上只有一份关系。因此
+Logical-Physical 是一对多的关系。</p>
+</blockquote>
+<p> </p>
+<h2 id="优化方向">优化方向</h2>
+<ul>
+<li>写不会阻塞读（在 OCC 中写数据需要是原子操作，否则对写一半的 tuple
+读会出现未定义现象）</li>
+<li>只读事务无需上锁，就可以获得一致性的快照</li>
+<li>Multi Version 只是一个思想，可以和
+2PL、Timestamp-Order、OCC相结合</li>
+</ul>
+<p>每个写操作会创建对应数据项的新版本，读操作则会选择数据项的一个版本进行读取</p>
+<p> </p>
+<h2 id="mvto">MVTO</h2>
+<p>对于每个事务 <span
+class="math inline">\(T_i\)</span>，将一个静态的唯一性时间戳与之关联，记作
+TS(<span
+class="math inline">\(T_i\)</span>)，在<strong>事务开始执行时赋予该时间戳</strong></p>
+<p>每个数据项 Q，有一个版本 &lt;Q1, Q2, ..., Qm&gt;
+与之关联，每个版本包含三个字段：</p>
+<ul>
+<li><strong>Content</strong>：Q 在该版本的值</li>
+<li><strong>W-timestamp(Q)</strong>：创建该版本的事务的时间戳</li>
+<li><strong>R-timestamp(Q)</strong>：所有成功读取过该版本的任意事务的最大时间戳</li>
+</ul>
+<p>令 Qk 为写时间戳<strong>小于等于 TS(<span
+class="math inline">\(T_i\)</span>) 的最大写时间戳</strong> 的版本。</p>
+<h3 id="写操作">写操作</h3>
+<ul>
+<li>若 TS(<span class="math inline">\(T_i\)</span>) &lt;
+R-timestamp(Qk)，则系统回滚 <span
+class="math inline">\(T_i\)</span></li>
+<li>若 TS(<span class="math inline">\(T_i\)</span>) =
+W-timestamp(Qk)，则系统覆盖 Qk 的内容</li>
+<li>若 TS(<span class="math inline">\(T_i\)</span>) &gt;
+R-timestamp(Qk)，则创建一个 Q 的新版本。该版本中保存其值，同时将
+W-timestamp(Q) 和 R-timestamp(Q) 初始化为 TS(<span
+class="math inline">\(T_i\)</span>)。</li>
+</ul>
+<p>在一个事务太晚执行写操作时将其终止，也就是 <span
+class="math inline">\(T_i\)</span>
+尝试写入一个其他新事务可能读取的版本。</p>
+<h3 id="读操作">读操作</h3>
+<p>读取数据项 Qk 的内容且 TS(<span class="math inline">\(T_i\)</span>)
+&gt; R-timestamp(<span class="math inline">\(Q_k\)</span>)
+时，系统就更新 <span class="math inline">\(Q_k\)</span> 的 R-timestamp
+的值。</p>
+<p>保证事务读取时间上在它之前的最新版本数据</p>
+<h3 id="提交阶段">提交阶段</h3>
+<p>释放所有的锁。</p>
+<h3 id="回收数据">回收数据</h3>
+<p>对于两个数据项版本，假如都满足：时间戳小于当前最老事务时间戳还小的版本的时间戳，则删除其中较老的</p>
+<h3 id="解决的问题">解决的问题</h3>
+<ul>
+<li><strong>读写冲突：</strong>写会创建一个新的数据版本，因为
+read-timestamp &lt; write
+timestamp，所以会读到写之前的数据，因此不会发生冲突</li>
+<li><strong>写读冲突：</strong>读会更新 read-ts，写的事务会发现自己的
+timestamp &lt; read-ts，因此会写失败</li>
+<li><strong>脏读：</strong>通过创建新的版本来实现写，因此一个事务写回滚，不会影响另外一个事务读</li>
+<li><strong>写写覆盖：</strong>写写通过加锁进行互斥访问，先获得锁的事务写入成功</li>
+</ul>
+<p> </p>
+<h2 id="mv2pl">MV2PL</h2>
+<p>一个数据项的每个版本有一个单独的时间戳，记为
+ts-counter，它再提交处理期间递增</p>
+<h3 id="更新事务">更新事务</h3>
+<p>更新时执行强二阶段锁。也就是说，持有全部需要更新数据项的锁直到事务结束。</p>
+<ul>
+<li>读取一个数据项时，获得数据项上的共享锁，读取该数据项的最新版本</li>
+<li>写一个数据项时，获得该数据项上的排他锁，创建一个该数据项的新版本并上锁，在新版本上做写操作。</li>
+</ul>
+<h3 id="只读事务">只读事务</h3>
+<p>对于只读事务，返回一个写时间戳 <strong>小于等于 TS(<span
+class="math inline">\(T_i\)</span>) 的最大写时间戳</strong>
+的版本数据。只读事务不需要等待加锁。</p>
+<h3 id="提交阶段-1">提交阶段</h3>
+<p>对于更新事务，<strong>同一时间只允许一个更新事务提交</strong>，将每个版本的时间戳设置为
+ts-commit + 1，然后将 ts-commit 加上 1，提交。</p>
+<p>对于只读事务，将看到 ts-commit 的旧值直到 <span
+class="math inline">\(T_i\)</span>
+成功提交，即只能够读到当前事务开始之前成功提交的数据。</p>
+<p>释放所有读写锁。</p>
+<h3 id="回收数据-1">回收数据</h3>
+<p>类似 MVTO</p>
+<h3 id="解决的问题-1">解决的问题</h3>
+<ul>
+<li><strong>读写冲突：</strong>读写谁先加到锁，谁成功</li>
+<li><strong>写读冲突：</strong>读写谁先加到锁，谁成功</li>
+<li><strong>脏读：</strong>读取的都是commit的数据，不会发生脏读</li>
+<li><strong>写写覆盖：</strong>写锁互斥方式</li>
+</ul>
+<p> </p>
+<h2 id="mvocc">MVOCC</h2>
+<h3 id="读操作-1">读操作</h3>
+<p>返回一个写时间戳 <strong>小于等于 TS(<span
+class="math inline">\(T_i\)</span>) 的最大写时间戳</strong>
+的版本数据，将其加入读集合。</p>
+<h3 id="写操作-1">写操作</h3>
+<p>找到该数据项的最新版本
+Qk，如果其未上锁，则获取数据项的锁，为其创建一个新版本并上锁，将其加入写集合。否则崩溃。</p>
+<h3 id="验证阶段">验证阶段</h3>
+<p>获取事务
+commit-ts（有并发控制器提供的最新时间戳），决定了其串行化的次序</p>
+<p>检查读集合中的数据项是否被已经 commit
+的事务所修改，如果冲突就回滚。</p>
+<h3 id="提交阶段-2">提交阶段</h3>
+<p>把修改过的数据时间戳设置为 commit-ts。这时候才对其他事务可见。</p>
+<h3 id="回收数据-2">回收数据</h3>
+<p>类似 MVTO</p>
+<h3 id="解决的问题-2">解决的问题</h3>
+<ul>
+<li><strong>读写冲突：</strong>因为有多版本，所以后面的写不会影响前面的读，不会冲突</li>
+<li><strong>写读冲突：</strong>
+虽然读取了老的数据，但是会在validataion的时候发现有事务已经更新了数据，因此读会回滚</li>
+<li><strong>脏读：</strong>只会读取commit的数据，因此不会出现脏读</li>
+<li><strong>写写覆盖：</strong>写写通过加锁进行互斥访问，先获得锁的事务写入成功</li>
+</ul>
+<p>   </p>
+<h1 id="reference">Reference</h1>
+<p>[1] 《数据库系统概念 第7版》</p>
+<p>[2] <a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/乐观并发控制">乐观并发控制
+- 维基百科，自由的百科全书 (wikipedia.org)</a></p>
+<p>[3] <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/168672853">多版本并发控制 -
+知乎 (zhihu.com)</a></p>
+<p>[4] <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/35097664">OCC系列之一:
+Validation-based Concurrency Control - 知乎 (zhihu.com)</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Concurrent-Control/" rel="tag"># Concurrent Control</a>
+              <a href="/tags/Transaction/" rel="tag"># Transaction</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/12/24/Coroutine/" rel="prev" title="Coroutine Introduction">
+      <i class="fa fa-chevron-left"></i> Coroutine Introduction
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#occ"><span class="nav-number">1.</span> <span class="nav-text">OCC</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#optimization-consideration"><span class="nav-number">1.1.</span> <span class="nav-text">Optimization Consideration</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#overview"><span class="nav-number">1.2.</span> <span class="nav-text">Overview</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#implementation"><span class="nav-number">1.3.</span> <span class="nav-text">Implementation</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#read-phase"><span class="nav-number">1.3.1.</span> <span class="nav-text">Read phase</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#validation-phase"><span class="nav-number">1.3.2.</span> <span class="nav-text">Validation phase</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#write-phase-commit-phase"><span class="nav-number">1.3.3.</span> <span class="nav-text">Write phase &#x2F; Commit phase</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#advantage-properties"><span class="nav-number">1.4.</span> <span class="nav-text">Advantage &amp; Properties</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#problem"><span class="nav-number">1.5.</span> <span class="nav-text">Problem</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#optimizations"><span class="nav-number">1.6.</span> <span class="nav-text">Optimizations</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#silo-tictoc"><span class="nav-number">2.</span> <span class="nav-text">Silo &amp; TicToc</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#overview-1"><span class="nav-number">2.1.</span> <span class="nav-text">Overview</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#implementation-1"><span class="nav-number">2.2.</span> <span class="nav-text">Implementation</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#tid-allocation"><span class="nav-number">2.2.1.</span> <span class="nav-text">TID Allocation</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#validation"><span class="nav-number">2.2.2.</span> <span class="nav-text">Validation</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%984"><span class="nav-number">2.3.</span> <span class="nav-text">问题[4]</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#mvcc"><span class="nav-number">3.</span> <span class="nav-text">MVCC</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E6%96%B9%E5%90%91"><span class="nav-number">3.1.</span> <span class="nav-text">优化方向</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mvto"><span class="nav-number">3.2.</span> <span class="nav-text">MVTO</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%99%E6%93%8D%E4%BD%9C"><span class="nav-number">3.2.1.</span> <span class="nav-text">写操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%BB%E6%93%8D%E4%BD%9C"><span class="nav-number">3.2.2.</span> <span class="nav-text">读操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%90%E4%BA%A4%E9%98%B6%E6%AE%B5"><span class="nav-number">3.2.3.</span> <span class="nav-text">提交阶段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%9E%E6%94%B6%E6%95%B0%E6%8D%AE"><span class="nav-number">3.2.4.</span> <span class="nav-text">回收数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">3.2.5.</span> <span class="nav-text">解决的问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mv2pl"><span class="nav-number">3.3.</span> <span class="nav-text">MV2PL</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9B%B4%E6%96%B0%E4%BA%8B%E5%8A%A1"><span class="nav-number">3.3.1.</span> <span class="nav-text">更新事务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%AA%E8%AF%BB%E4%BA%8B%E5%8A%A1"><span class="nav-number">3.3.2.</span> <span class="nav-text">只读事务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%90%E4%BA%A4%E9%98%B6%E6%AE%B5-1"><span class="nav-number">3.3.3.</span> <span class="nav-text">提交阶段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%9E%E6%94%B6%E6%95%B0%E6%8D%AE-1"><span class="nav-number">3.3.4.</span> <span class="nav-text">回收数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E7%9A%84%E9%97%AE%E9%A2%98-1"><span class="nav-number">3.3.5.</span> <span class="nav-text">解决的问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mvocc"><span class="nav-number">3.4.</span> <span class="nav-text">MVOCC</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%BB%E6%93%8D%E4%BD%9C-1"><span class="nav-number">3.4.1.</span> <span class="nav-text">读操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%99%E6%93%8D%E4%BD%9C-1"><span class="nav-number">3.4.2.</span> <span class="nav-text">写操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81%E9%98%B6%E6%AE%B5"><span class="nav-number">3.4.3.</span> <span class="nav-text">验证阶段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%90%E4%BA%A4%E9%98%B6%E6%AE%B5-2"><span class="nav-number">3.4.4.</span> <span class="nav-text">提交阶段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%9E%E6%94%B6%E6%95%B0%E6%8D%AE-2"><span class="nav-number">3.4.5.</span> <span class="nav-text">回收数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E7%9A%84%E9%97%AE%E9%A2%98-2"><span class="nav-number">3.4.6.</span> <span class="nav-text">解决的问题</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#reference"><span class="nav-number">4.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Zheng Xinrui</p>
+  <div class="site-description" itemprop="description">This man is too lazy to introduce himself.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">10</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/BL-GS" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;BL-GS" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/zhengxinrui02@gmail.com" title="E-Mail → zhengxinrui02@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Zheng Xinrui</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'forest',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

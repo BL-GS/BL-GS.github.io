@@ -20,21 +20,24 @@
     var CONFIG = {"hostname":"bl-gs.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="Indexing plays an essential role in accelerating transaction running. But how to organize data and index properly and how to deal with the concurrency of structure is a hard bone which need to conside">
+  <meta name="description" content="Thesis reading: CoroBase: Coroutine-Oriented Main-Memory Database Engine">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Concurrent Indexing Structure">
-<meta property="og:url" content="https://bl-gs.github.io/2022/12/20/Concurrent%20Indexing%20Structure/index.html">
+<meta property="og:title" content="Thesis Reading: CoroBase: Coroutine-Oriented Main-Memory Database Engine">
+<meta property="og:url" content="https://bl-gs.github.io/2022/12/30/CoroBase/index.html">
 <meta property="og:site_name" content="Zheng Xinrui">
-<meta property="og:description" content="Indexing plays an essential role in accelerating transaction running. But how to organize data and index properly and how to deal with the concurrency of structure is a hard bone which need to conside">
+<meta property="og:description" content="Thesis reading: CoroBase: Coroutine-Oriented Main-Memory Database Engine">
 <meta property="og:locale" content="en_US">
-<meta property="article:published_time" content="2022-12-20T09:58:07.355Z">
-<meta property="article:modified_time" content="2022-12-20T10:02:19.841Z">
+<meta property="og:image" content="https://bl-gs.github.io/images/Thesis%20CoroBase/Modification.png">
+<meta property="article:published_time" content="2022-12-30T15:21:05.833Z">
+<meta property="article:modified_time" content="2022-12-30T15:24:27.340Z">
 <meta property="article:author" content="Zheng Xinrui">
 <meta property="article:tag" content="Transaction">
-<meta property="article:tag" content="Structure">
+<meta property="article:tag" content="Thesis">
+<meta property="article:tag" content="Coroutine">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://bl-gs.github.io/images/Thesis%20CoroBase/Modification.png">
 
-<link rel="canonical" href="https://bl-gs.github.io/2022/12/20/Concurrent%20Indexing%20Structure/">
+<link rel="canonical" href="https://bl-gs.github.io/2022/12/30/CoroBase/">
 
 
 <script id="page-configurations">
@@ -47,7 +50,7 @@
   };
 </script>
 
-  <title>Concurrent Indexing Structure | Zheng Xinrui</title>
+  <title>Thesis Reading: CoroBase: Coroutine-Oriented Main-Memory Database Engine | Zheng Xinrui</title>
   
 
 
@@ -170,7 +173,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://bl-gs.github.io/2022/12/20/Concurrent%20Indexing%20Structure/">
+    <link itemprop="mainEntityOfPage" href="https://bl-gs.github.io/2022/12/30/CoroBase/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -183,7 +186,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          Concurrent Indexing Structure
+          Thesis Reading: CoroBase: Coroutine-Oriented Main-Memory Database Engine
         </h1>
 
         <div class="post-meta">
@@ -194,7 +197,7 @@
               <span class="post-meta-item-text">Posted on</span>
               
 
-              <time title="Created: 2022-12-20 17:58:07 / Modified: 18:02:19" itemprop="dateCreated datePublished" datetime="2022-12-20T17:58:07+08:00">2022-12-20</time>
+              <time title="Created: 2022-12-30 23:21:05 / Modified: 23:24:27" itemprop="dateCreated datePublished" datetime="2022-12-30T23:21:05+08:00">2022-12-30</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -207,7 +210,7 @@
             </span>
 
           
-            <div class="post-description">Indexing plays an essential role in accelerating transaction running. But how to organize data and index properly and how to deal with the concurrency of structure is a hard bone which need to consider carefully.</div>
+            <div class="post-description">Thesis reading: CoroBase: Coroutine-Oriented Main-Memory Database Engine</div>
 
         </div>
       </header>
@@ -218,63 +221,124 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1 id="并发协议">并发协议</h1>
-<p>可以将对索引结构的访问当作像对其他任何数据库结构的访问，并应用前面讨论过的并发控制技术。然而，由于索引经常被访问，会成为一个很大的锁争用点，从而导致较低的并发程度。</p>
-<p>尽快以非两阶段的方式来释放索引锁、以最大限度地提高并发度是可取的。</p>
+        <h1 id="introduction">Introduction</h1>
+<p>主要着眼于当前数据库中的问题：Data Stall。</p>
+<p>对于一些依赖于指针操作的数据结构来说（也就是访问内存不连续的数据），
+Cache miss 会导致很多的 Data Stall。</p>
+<p>现代处理器来具有多层 Cache
+架构和预取（prefetch）指令可能会缓解这些问题，但是硬件预取等做法对于灵活的指针操作到底不够精确，需要手动的异步或者流水线算法或者状态机来运用。</p>
+<p>协程具有相对于 last-level cache miss 而言较低的切换开销，但是软预取
+(software prefetch) 也具有一些挑战：</p>
+<ul>
+<li><p>很多现在的事务逻辑采用 <strong>内部聚簇</strong>
+(intra-transaction
+batching)的做法。这种做法提供多键值接口，破坏了向后兼容性 (backward
+compatibility)。换句话说，给的接口的操作粒度太大了，一个事务里不能单独控制一两个数据的读写。</p>
+<p>需要考虑
+<strong>如何在不做应用层修改的条件下，在数据库系统中实现协程（软预取）</strong></p></li>
+<li><p>评估软预取会对一个完整的数据库引擎带来怎样的好处</p></li>
+</ul>
 <blockquote>
-<p>索引操作的 <strong>操作可串行化</strong> ：</p>
-<p>如果存在一种操作的可串行化顺序与在并发执行中每个索引操作所看到的结果是一致的，并且与所有操作执行之后索引的最终状态也是一致的，则称在这个索引上的索引操作的并发执行是可串行化的。</p>
+<p>感觉对于 Data Stall 问题，假如想要用 Coroutine 来解决，那应该得用
+Stackless Coroutine，因为 Stackful Coroutine
+的协程切换会导致很多缓存失效。</p>
 </blockquote>
-<h1 id="在线索引创建">在线索引创建</h1>
-<blockquote>
-<p>确保数据和索引一致性的一种方式是在创建索引时阻止对关系的更新，例如通过获得关系上的共享锁来实现。在创建了索引并更新了关系的元数据以反映索引的存在后，该锁可以被释放。随后的更新事务将找到索引，并作为事务的一部分来执行索引的维护。</p>
-<p>但是上述方法会使得系统在很长时间内无法对关系进行更新。许多数据库系统支持
-<strong>在线索引创建</strong>，使得创建索引时也能够进行关系的更新</p>
-</blockquote>
+<p>它在协程上应用软预取的思路是，对应一个线程，我批处理一组事务，然后每次做
+<strong>索引</strong> 或者 <strong>读写</strong> tuple
+时，发出预取指令然后切换协程。</p>
+<p>总体而言，我感觉这是提升响应速度、总的吞吐量的，但是会降低单个事务的执行速率（也就是事务的延迟提高了），不适合需要快速完成的场景。</p>
+<p>   </p>
+<h1 id="implementation">Implementation</h1>
+<h2 id="transaction">Transaction</h2>
+<p>它基于现成的基于 MVCC 的数据库引擎 ERMIA
+做文章，将其转化为协程-线程的模式。当然做了一点修改。</p>
+<figure>
+<img src="/images/Thesis%20CoroBase/Modification.png"
+alt="Modification on ERMIA" />
+<figcaption aria-hidden="true">Modification on ERMIA</figcaption>
+</figure>
+<p>找数据项的步骤是：</p>
 <ol type="1">
-<li>获取关系的一个快照并使用它来创建索引；同时系统会在快照创建之后所发生的对关系的所有更新都记录在日志中</li>
-<li>当快照数据上的索引完成之后，由于缺少后续的更新，因此该索引尚未准备好使用。此时对关系的更新日志被用于更新索引。（当执行索引更新时，在关系上可能会发生进一步的更新）</li>
-<li>索引更新因而获取关系上的共享锁以防止进一步更新，并将所有剩余更新应用于索引。（此时，索引和关系的内容是一致的），然后，更新关系的元数据以指示新索引的存在。最后释放对应的锁。</li>
+<li>线程通过索引找到一个间接数组，通过这个间接数组上的指针找到对应的实际数据记录</li>
+<li>通过搜索版本链得到合适的数据版本</li>
 </ol>
-<h1 id="蟹行协议-crabbing-protocol">蟹行协议
-<code>crabbing protocol</code></h1>
-<p>是管理对 B+ 树并发访问的技术</p>
-<h2 id="具体做法">具体做法</h2>
+<blockquote>
+<p>snapshot isolation with the serial safety net [60] for
+serializability</p>
+<p>感觉有点意思</p>
+</blockquote>
+<p>类似于ERMIA, CoroBase采用串行安全网(serial safety net,
+SSN)，可以应用在快照隔离实现可串行性。在协程环境下无需修改</p>
+<p>对于物理层的数据结构（索引和版本链），当使用 latch
+时会有一点问题，死锁之类的。</p>
+<p>因此它数据结构使用乐观逻辑，不使用
+latch；只在树节点需要更新时上锁（hand-over-hand
+locking)。它发现这时候协程 suspend 没啥用，所以就没用</p>
+<p> </p>
+<h2 id="fully-nested-coroutine-to-transaction">Fully-Nested
+Coroutine-to-Transaction</h2>
+<p>每个线程拥有 thread local 的协程调度器，在同一个 batch
+的事务中调度，直到当前 batch 内事务全部完成（为了保持局部性）。</p>
+<p>主要想法是将那些会导致 cache miss
+的函数调用链转化为无栈协程，那些不会影响 cache miss 的函数则保持原状</p>
+<blockquote>
+<p>需要注意的是，在 C++20
+中协程的实现是会修改函数的调用方式的，当“普通地”调用一个协程函数（实际上调用协程函数地需要有协程框架），会有一些额外地消耗。</p>
+</blockquote>
 <ul>
-<li>在搜索一个键值时:
-<ul>
-<li>蟹行协议首先以共享模式封锁根节点。</li>
-<li>沿树向下遍历时，在孩子节点上获得共享锁，随后释放在父节点上的锁。直到到达叶子节点。</li>
-</ul></li>
-<li>在插入或者删除一个键值时：
-<ul>
-<li>采取与搜索相同的协议直到到达对应的叶子节点。</li>
-<li>用排他模式封锁该叶子节点，并且插入或删除该节点。</li>
-<li>若需要分裂或者需要和兄弟节点合并，或者需要在兄弟节点之间重新分配键值。用排他模式封锁该节点的父节点。执行完这些操作后，释放对应的锁。</li>
-<li>如果父节点需要分裂、合并或者重新分配键值，该协议保留父节点上的锁，并用相同的方式进一步向上传播，否则释放父节点上的锁。</li>
-</ul></li>
+<li>对于 <strong>索引</strong>，在每次 <strong>预取之后</strong> 使用
+co_await 进行 suspend</li>
+<li>对于 <strong>版本链搜索</strong>，在解引用一个链表节点前作预取和
+suspend</li>
 </ul>
-<h2 id="问题及解决方法">问题及解决方法</h2>
+<p>当 suspend 后直接返回 scheduler，转而去作那些 batch
+中未完成的其他事务。</p>
+<p> </p>
+<h2 id="two-level-coroutine-to-transaction">Two-Level
+Coroutine-to-Transaction</h2>
+<p>数据库引擎较深的函数调用层次，可能会导致一些切换的代价比较大，毕竟不是每次解引用指针都会导致
+cache miss。同时又要保证各种逻辑的分离（这种强迫症很合我心~~）</p>
+<p>所以它将数据库引擎中的函数调用展平了，也就是
+inline，构成了两层的结构。（其实我感觉用个模板函数和偏特化就行了，简单又易看）。一些顺序执行的不会造成
+suspend 的函数就不需要 inline 了。</p>
+<p>展平可能造成指令的 cache
+失效。论文中说可能乱序执行会有影响，但我感觉毕竟顺序执行，指令预取也不是不可以，但是费电费时间还是有点。</p>
+<p> </p>
+<h2 id="resource-management">Resource Management</h2>
+<p>协程的多个函数入口导致资源分配回收的时间不是太明确。</p>
+<h3 id="epoch-based-reclamation">Epoch-based Reclamation</h3>
+<p>对于一些无锁数据结构而言，在并发的情况下，有一些数据项虽然被删除了，但是它的内存还有可能被访问。</p>
+<p>Epoch-based Reclamation
+的基本思想是为每个线程在访问的内存上<strong>注册</strong>，然后保证那些要被删除的数据项在所有注册线程完成事务后释放空间（就是引用计数）。</p>
+<p>在 thread-to-transaction
+的情况下，一个事务使用的资源跟其线程是一致的。这个时候事务和线程的释放资源可以是同步的。</p>
+<p>但是在 coroutine-to-transaction 的情况下，会出现一个线程上一个 batch
+中多个事务共同使用同一个数据项的情况。这个时候就需要整个 batch
+都做完再释放资源。</p>
+<h3 id="thread-local-storage">Thread-Local Storage</h3>
+<p>thread-local 的资源和 coroutine
+有些冲突，毕竟本来是事务自己拥有的现在要一个 batch 的事务一起共享。</p>
+<p>因此把资源改成 transaction-local</p>
+<p> </p>
+<h2 id="discussion">Discussion</h2>
 <ul>
-<li>可能产生死锁：通过释放操作所持有的锁再从树根重启搜索操作的方式，系统可以解决这种死锁。</li>
+<li>协程还不错，不需要修改太多东西</li>
+<li>对于 shared-everything
+的部分（索引、数据项），使用乐观并发控制协议的多版本机制挺搭。虽然添加可串行性会扩大冲突。</li>
+<li>对于悲观锁，协程可能造成更高的死锁概率。</li>
+<li>shared-nothing
+的系统分区（thread-local的东西），不需要同步和并发控制。但是引入协程需要考虑一些东西（比如改成
+transaction-local）</li>
+<li>对于一个事务拆分成几部分，分给不同线程来做，就能达到一个很好的局部性和无冲突化。但是对于协程来说，仍需考虑。</li>
+<li>它移除了 multi-key operation
+的需要，但是仍然支持这种操作？？当做了多值操作时，访问一个 key 引发的
+suspend 可能不会导致返回 scheduler 而是去到其他 key 的访问处。</li>
 </ul>
-<h1 id="b-link-树协议-b-link-tree-locking-protocol">B-link 树协议
-<code>B-link-tree locking protocol</code></h1>
-<p>是管理对 B+ 树并发访问的技术</p>
-<h2 id="要求">要求</h2>
-<p>要求每个节点（包括内部节点）维护指向其右兄弟的指针。主要用作分裂时引发的查找操作。</p>
-<h2 id="具体做法-1">具体做法</h2>
-<p>在蟹行协议的基础上，在向下遍历或者向上遍历时，即请求子节点或者父节点上的锁之前，释放当前内部节点的锁。（这样避免的死锁，但是可能导致异常，协议要求检测和处理这些情况）</p>
-<h2 id="问题及解决方法-1">问题及解决方法</h2>
-<ul>
-<li>在没有检测到谓词读和插入或更新之间的冲突的情况下，会产生幻象现象：
-<ul>
-<li>可以通过索引封锁技术，用两阶段方式封锁索引的叶节点来防止幻象现象</li>
-<li>一些索引并发控制机制不封锁整个索引叶子节点，而是在单个键值上使用<strong>键值封锁</strong>，并允许从同一个叶子节点插入或删除其他键值。但是直接使用键值封锁还是会有幻象现象。</li>
-<li>可以使用 <code>next-key</code>
-封锁技术。每次索引查找不仅必须封锁查找范围内找到的键值，而且必须封锁下一个键值，即刚好大于范围内最后一个键值的键值。</li>
-</ul></li>
-</ul>
+<p>   </p>
+<h1 id="reference">Reference</h1>
+<p>[1] Yongjun He, Jiacheng Lu and Tianzheng Wang. <a
+target="_blank" rel="noopener" href="http://www.vldb.org/pvldb/vol14/p431-he.pdf">CoroBase:
+Coroutine-Oriented Main-Memory Database Engine</a>. VLDB 2021.</p>
 
     </div>
 
@@ -285,7 +349,8 @@
       <footer class="post-footer">
           <div class="post-tags">
               <a href="/tags/Transaction/" rel="tag"># Transaction</a>
-              <a href="/tags/Structure/" rel="tag"># Structure</a>
+              <a href="/tags/Thesis/" rel="tag"># Thesis</a>
+              <a href="/tags/Coroutine/" rel="tag"># Coroutine</a>
           </div>
 
         
@@ -294,13 +359,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2022/12/20/Logging/" rel="prev" title="Logging">
-      <i class="fa fa-chevron-left"></i> Logging
+    <a href="/2022/12/26/OCC_MVCC/" rel="prev" title="OCC & MVCC">
+      <i class="fa fa-chevron-left"></i> OCC & MVCC
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2022/12/21/Simple%20Indexing%20Introduction/" rel="next" title="Indexing Introduction">
-      Indexing Introduction <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -359,9 +421,9 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91%E5%8D%8F%E8%AE%AE"><span class="nav-number">1.</span> <span class="nav-text">并发协议</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8%E7%BA%BF%E7%B4%A2%E5%BC%95%E5%88%9B%E5%BB%BA"><span class="nav-number">2.</span> <span class="nav-text">在线索引创建</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%9F%B9%E8%A1%8C%E5%8D%8F%E8%AE%AE-crabbing-protocol"><span class="nav-number">3.</span> <span class="nav-text">蟹行协议
-crabbing protocol</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%81%9A%E6%B3%95"><span class="nav-number">3.1.</span> <span class="nav-text">具体做法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="nav-number">3.2.</span> <span class="nav-text">问题及解决方法</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#b-link-%E6%A0%91%E5%8D%8F%E8%AE%AE-b-link-tree-locking-protocol"><span class="nav-number">4.</span> <span class="nav-text">B-link 树协议
-B-link-tree locking protocol</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A6%81%E6%B1%82"><span class="nav-number">4.1.</span> <span class="nav-text">要求</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%81%9A%E6%B3%95-1"><span class="nav-number">4.2.</span> <span class="nav-text">具体做法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95-1"><span class="nav-number">4.3.</span> <span class="nav-text">问题及解决方法</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#introduction"><span class="nav-number">1.</span> <span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#implementation"><span class="nav-number">2.</span> <span class="nav-text">Implementation</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#transaction"><span class="nav-number">2.1.</span> <span class="nav-text">Transaction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#fully-nested-coroutine-to-transaction"><span class="nav-number">2.2.</span> <span class="nav-text">Fully-Nested
+Coroutine-to-Transaction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#two-level-coroutine-to-transaction"><span class="nav-number">2.3.</span> <span class="nav-text">Two-Level
+Coroutine-to-Transaction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#resource-management"><span class="nav-number">2.4.</span> <span class="nav-text">Resource Management</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#epoch-based-reclamation"><span class="nav-number">2.4.1.</span> <span class="nav-text">Epoch-based Reclamation</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#thread-local-storage"><span class="nav-number">2.4.2.</span> <span class="nav-text">Thread-Local Storage</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#discussion"><span class="nav-number">2.5.</span> <span class="nav-text">Discussion</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#reference"><span class="nav-number">3.</span> <span class="nav-text">Reference</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

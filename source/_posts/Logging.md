@@ -51,11 +51,11 @@ binlog 日志只用于归档，只依靠binlog 是没有 crash-safe 能力的。
 
 * `prepare` 阶段，将 Redo 日志持久化到磁盘，并将回滚段置为prepared状态，此时 Binlog 不做操作。
 
-	![prepare](images/Logging/logging_prepare.png)
+	![prepare](/images/Logging/logging_prepare.png)
 
 * `commit` 阶段，设置提交状态，binlog持久化到磁盘，然后存储引擎层提交。
 
-	![commit](images/Logging/logging_commit.png)
+	![commit](/images/Logging/logging_commit.png)
 
 > 2PC 保证了事务在引擎层（redo）和 server 层（binlog）之间的原子性。其中 binlog 作为XA协调器，即以 binlog 是否成功写入磁盘作为事务提交的标志（innodb commit 标志并不是事务成功与否的标志）。所以在崩溃恢复中也是以 redo log 中的 xid 与 binlog 中的 xid 进行比较，如果 xid 在 binlog 中则提交，否则回滚。
 
@@ -96,7 +96,7 @@ binlog 日志只用于归档，只依靠binlog 是没有 crash-safe 能力的。
 
 2PC机制只能解决单个事务的 Redo/Binlog 顺序一致的问题，但是对于并发事务还需要一些调整
 
-![origin sequence](images/Logging/logging_origin_sequence.png)
+![origin sequence](/images/Logging/logging_origin_sequence.png)
 
 如上图，事务按照T1、T2、T3顺序开始执行，将二进制日志（按照T1、T2、T3顺序）写入日志文件系统缓冲，调用 fsync() 进行一次 group commit 将日志文件永久写入磁盘，但是存储引擎提交的顺序为T2、T3、T1。当T2、T3提交事务之后，若通过在线物理备份进行数据库恢复来建立复制时，因为在 InnoDB 存储引擎层会检测事务T3在上下两层都完成了事务提交，不需要在进行恢复了，此时主备数据不一致 
 
@@ -146,7 +146,7 @@ binlog 的组提交，prepare 阶段不变，只针对 commit 阶段，将 commi
 
 为了标记事务所属的组，MySQL5.7版本在产生Binlog日志时会有两个特殊的值记录在 Binlog Event 中，last_committed 和 sequence_number，其中 last_committed指的是该事务提交时，上一个事务提交的编号，sequence_number是事务提交的序列号，在一个Binlog文件内单调递增。如果两个事务的last_committed值一致，这两个事务就是在一个组内提交的。
 
-![group commit sequence](images/Logging/logging_groupcommit_sequence.png)
+![group commit sequence](/images/Logging/logging_groupcommit_sequence.png)
 
 
 
@@ -180,7 +180,7 @@ binlog 的组提交，prepare 阶段不变，只针对 commit 阶段，将 commi
 
 把 Schema 级别的并行复制改成 Table 级别，可以大幅度提高单库多表环境下的并行度。但是对于只有一个热点表的情况依然处理不了。
 
-![schema sequence](images/Logging/logging_schema_sequence.png)
+![schema sequence](/images/Logging/logging_schema_sequence.png)
 
 ### 基于 Group Commit 的并行复制
 

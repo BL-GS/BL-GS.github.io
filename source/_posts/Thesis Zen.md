@@ -3,6 +3,7 @@ title: 'Thesis Reading: Zen, a robust NUMA-aware OLTP engine optimized for non-v
 categories:
 - Transaction
 tags:
+- Thesis
 - HTM
 - Transaction
 mathjax: true

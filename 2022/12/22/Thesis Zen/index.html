@@ -228,358 +228,244 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1 id="introduction">Introduction</h1>
-<p>传统的非易失性存储器（如硬盘）只支持块级存储，同时速度比 DRAM
-慢几个数量级。</p>
+        <h1 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h1><p>传统的非易失性存储器（如硬盘）只支持块级存储，同时速度比 DRAM 慢几个数量级。</p>
 <p>NVM 的特点：</p>
 <ul>
-<li>按字节访问的，在一些场景能够达到接近 DRAM 的速度，具有比 DRAM
-大若干倍的空间。</li>
+<li>按字节访问的，在一些场景能够达到接近 DRAM 的速度，具有比 DRAM 大若干倍的空间。</li>
 <li>写带宽远低于读，随机读写更慢</li>
 </ul>
-<p>因此需要重新设计事务数据库，主要考虑到</p>
+<p>因此需要重新设计事务数据库，主要考虑到 </p>
 <ul>
-<li><p><strong>元数据的修改</strong>
-<code>tuple metadata modification</code></p>
-<p>主流的内存 OLTP 都为每个 tuple
-维持少量的元数据用于并发控制。这些元数据会在 tuple
-读或者写的时候更新，因此造成昂贵的 NVM 写。</p></li>
+<li><p><strong>元数据的修改</strong> <code>tuple metadata modification</code></p>
+<p>  主流的内存 OLTP 都为每个 tuple 维持少量的元数据用于并发控制。这些元数据会在 tuple 读或者写的时候更新，因此造成昂贵的 NVM 写。</p>
+</li>
 <li><p><strong>NVM 写冗余</strong> <code>NVM write redundancy</code></p>
-<p>传统的 OLTP
-的持久性依赖于日志和检查点/快照，但是这个会造成一定的写冗余。</p></li>
-<li><p><strong>NVM 空间管理</strong>
-<code>NVM space management</code></p>
-<p>NVM
-的空间分配需要保证持久性，因此需要记录一些分配操作的元数据。传统的 OLTP
-事务通常执行很多的插入删除，导致很大的分配开销。</p></li>
+<p>  传统的 OLTP 的持久性依赖于日志和检查点/快照，但是这个会造成一定的写冗余。</p>
+</li>
+<li><p><strong>NVM 空间管理</strong> <code>NVM space management</code></p>
+<p>  NVM 的空间分配需要保证持久性，因此需要记录一些分配操作的元数据。传统的 OLTP 事务通常执行很多的插入删除，导致很大的分配开销。</p>
+</li>
 </ul>
-<p>Zen 引入了：元数据增强的 tuple cache，log-free
-的持久化事务，轻量级的空间管理。</p>
-<p>Zen+ 引入了：基于 MVCC 的适应性执行，NUMA-aware 的软分块(soft
-partition)技术。</p>
-<p> </p>
-<h2 id="基于-nvm-数据结构和系统的设计原则">基于 NVM
-数据结构和系统的设计原则</h2>
-<ol type="1">
-<li>尽可能多的将数据结构放在 DRAM。尤其是当它们是瞬态的
-<code>transient</code> 或者能够在恢复后重建</li>
+<p>Zen 引入了：元数据增强的 tuple cache，log-free 的持久化事务，轻量级的空间管理。</p>
+<p>Zen+ 引入了：基于 MVCC 的适应性执行，NUMA-aware 的软分块(soft partition)技术。</p>
+<p>&nbsp;</p>
+<h2 id="基于-NVM-数据结构和系统的设计原则"><a href="#基于-NVM-数据结构和系统的设计原则" class="headerlink" title="基于 NVM 数据结构和系统的设计原则"></a>基于 NVM 数据结构和系统的设计原则</h2><ol>
+<li>尽可能多的将数据结构放在 DRAM。尤其是当它们是瞬态的 <code>transient</code> 或者能够在恢复后重建</li>
 <li>尽可能地减少 NVM 写</li>
 <li>尽可能地减少持久化操作。</li>
 </ol>
-<p>   </p>
-<h1 id="基于-nvm-的-oltp-的数据管理">基于 NVM 的 OLTP 的数据管理</h1>
-<figure>
-<img src="/images/Thesis%20Zen/OLTP-Memory-Architecture.png"
-alt="OLTP-Memory-Architecture" />
-<figcaption aria-hidden="true">OLTP-Memory-Architecture</figcaption>
-</figure>
-<p> </p>
-<h2 id="mmdb-main-memory-database">MMDB (Main Memory Database)</h2>
-<p>如 <a href="#OLTP-Memory-Architecture">图(a)</a>，当 OLTP
-数据库的大小超过 DRAM 时，MMDB 将部分 NVM 视为 DRAM 使用，将部分的 tuple
-和 索引放在 NVM 上。</p>
+<p>&nbsp;<br>&nbsp;</p>
+<h1 id="基于-NVM-的-OLTP-的数据管理"><a href="#基于-NVM-的-OLTP-的数据管理" class="headerlink" title="基于 NVM 的 OLTP 的数据管理"></a>基于 NVM 的 OLTP 的数据管理</h1><p><img src="/images/Thesis%20Zen/OLTP-Memory-Architecture.png" alt="OLTP-Memory-Architecture"></p>
+<p>&nbsp;</p>
+<h2 id="MMDB-Main-Memory-Database"><a href="#MMDB-Main-Memory-Database" class="headerlink" title="MMDB (Main Memory Database)"></a>MMDB (Main Memory Database)</h2><p>如 <a href="#OLTP-Memory-Architecture">图(a)</a>，当 OLTP 数据库的大小超过 DRAM 时，MMDB 将部分 NVM 视为 DRAM 使用，将部分的 tuple 和 索引放在 NVM 上。</p>
 <p>但是恢复时依赖的仍然是 NVM 上的 Log 和检查点。</p>
-<p><strong>缺点</strong>：修改一个 tuple 还需要修改 WAL
-和检查点，导致两倍的写放大。当数据存放在 NVM 上，则还需要写入
-NVM；当数据库增大，会有更多 tuple 需要存放在 NVM 上，导致大量的 NVM
-写。</p>
-<p> </p>
-<h2 id="wbl-write-behind-logging">WBL (Write-behind logging)</h2>
-<p>如 <a href="#OLTP-Memory-Architecture">图(b)</a>，WBL 维持一个 tuple
-的缓存。在事务执行过程中，tuple 从 tuple cache 中获取。同时 WBL 通过每个
-tuple 的元数据（如 transaction ID，cts，版本指针）来支持在 NVM
-上的多个版本。</p>
-<p>跟 WAL 不同，WBL log
-不包括修改后的数据，日志在一系列事务提交后持久化。由于持久化需要内存屏障（SFENCE），因此当日志持久化后代表在其之前所有的事务都完成了。</p>
+<p><strong>缺点</strong>：修改一个 tuple 还需要修改 WAL 和检查点，导致两倍的写放大。当数据存放在 NVM 上，则还需要写入 NVM；当数据库增大，会有更多 tuple 需要存放在 NVM 上，导致大量的 NVM 写。</p>
+<p>&nbsp;</p>
+<h2 id="WBL-Write-behind-logging"><a href="#WBL-Write-behind-logging" class="headerlink" title="WBL (Write-behind logging)"></a>WBL (Write-behind logging)</h2><p>如 <a href="#OLTP-Memory-Architecture">图(b)</a>，WBL 维持一个 tuple 的缓存。在事务执行过程中，tuple 从 tuple cache 中获取。同时 WBL 通过每个 tuple 的元数据（如 transaction ID，cts，版本指针）来支持在 NVM 上的多个版本。</p>
+<p>跟 WAL 不同，WBL log 不包括修改后的数据，日志在一系列事务提交后持久化。由于持久化需要内存屏障（SFENCE），因此当日志持久化后代表在其之前所有的事务都完成了。</p>
 <p>在恢复时只需要查找最后一个日志项然后撤销操作即可。</p>
-<p><strong>优点</strong>：相比于
-MMDB，它的日志大小比较小并且不需要维护检查点（恢复时只看最后一个日志项）。因此对于一个
-tuple 的更新只需要写一次 NVM。</p>
-<p><strong>缺点</strong>：它需要为每个 tuple 维护一个元数据（在 NVM
-中），因此需要对 NVM 做很多随机写（主要是时间戳啥的）</p>
-<p> </p>
-<h2 id="foedus">FOEDUS</h2>
-<p>如 <a href="#OLTP-Memory-Architecture">图(c)</a>，FOEDUS 将 tuple
-存在 NVM 中的一个快照页中，在 DRAM 中创建一个页的 Cache。DRAM
-中页的索引维护两个指针，一个指向 NVM 中的快照页，一个指向 DRAM 中页的
-Cache。当　DRAM 中不存在对应 Cache，则从 NVM 载入。</p>
+<p><strong>优点</strong>：相比于 MMDB，它的日志大小比较小并且不需要维护检查点（恢复时只看最后一个日志项）。因此对于一个 tuple 的更新只需要写一次 NVM。</p>
+<p><strong>缺点</strong>：它需要为每个 tuple 维护一个元数据（在 NVM 中），因此需要对 NVM 做很多随机写（主要是时间戳啥的）</p>
+<p>&nbsp;</p>
+<h2 id="FOEDUS"><a href="#FOEDUS" class="headerlink" title="FOEDUS"></a>FOEDUS</h2><p>如 <a href="#OLTP-Memory-Architecture">图(c)</a>，FOEDUS 将 tuple 存在 NVM 中的一个快照页中，在 DRAM 中创建一个页的 Cache。DRAM 中页的索引维护两个指针，一个指向 NVM 中的快照页，一个指向 DRAM 中页的 Cache。当　DRAM 中不存在对应 Cache，则从 NVM 载入。</p>
 <p>因此需要有一个垃圾回收机制回收不需要的快照。</p>
 <p><strong>优点</strong>：避免了对每个 NVM 中的 tuple 进行修改。</p>
-<p><strong>缺点</strong>：页粒度的 Cache
-造成了读放大。同时对快照的回收和分配造成了 NVM 的写。</p>
-<p> </p>
-<h2 id="zen">Zen</h2>
-<p>如 <a href="#OLTP-Memory-Architecture">图(d)</a>，为 tuple
-维护一个元数据 Cache，但是粒度比 FOEDUS 小，是 tuple 级别。相比于
-WBL，它只在 Cache 上更改数据。</p>
-<p>Zen 完全移除日志。同时还使用所谓的 light-weight NVM space
-allocation</p>
-<p>   </p>
-<h1 id="zen-的组成架构">Zen 的组成架构</h1>
-<figure>
-<img src="/images/Thesis%20Zen/Zen-Architecture.png"
-alt="Zen-Architecture" />
-<figcaption aria-hidden="true">Zen-Architecture</figcaption>
-</figure>
-<p>每张 Table 都有一个 HTable
-<code>hybrid table</code>。其中包含了：</p>
+<p><strong>缺点</strong>：页粒度的 Cache 造成了读放大。同时对快照的回收和分配造成了 NVM 的写。</p>
+<p>&nbsp;</p>
+<h2 id="Zen"><a href="#Zen" class="headerlink" title="Zen"></a>Zen</h2><p>如 <a href="#OLTP-Memory-Architecture">图(d)</a>，为 tuple 维护一个元数据 Cache，但是粒度比 FOEDUS 小，是 tuple 级别。相比于 WBL，它只在 Cache 上更改数据。</p>
+<p>Zen 完全移除日志。同时还使用所谓的 light-weight NVM space allocation</p>
+<p>&nbsp;<br>&nbsp;</p>
+<h1 id="Zen-的组成架构"><a href="#Zen-的组成架构" class="headerlink" title="Zen 的组成架构"></a>Zen 的组成架构</h1><p><img src="/images/Thesis%20Zen/Zen-Architecture.png" alt="Zen-Architecture"></p>
+<p>每张 Table 都有一个 HTable <code>hybrid table</code>。其中包含了：</p>
 <ul>
 <li>NVM 中的一个 tuple 堆</li>
 <li>DRAM 中的一个 Met-Cache</li>
 <li>线程独有的 NVM tuple 管理器</li>
 </ul>
-<p>除此之外，Zen 还在 NVM 上存了元数据（如分配的结构），在 DRAM
-上维持事务的都有数据和一些辅助信息（如索引）。</p>
-<p> </p>
-<h2 id="nvm-tuple-heap-thread-local">NVM-tuple Heap
-<code>thread local</code></h2>
-<p>Zen 将所有 tuple 存储在这个 NVM-tuple Heap 中，类似一个表。</p>
+<p>除此之外，Zen 还在 NVM 上存了元数据（如分配的结构），在 DRAM 上维持事务的都有数据和一些辅助信息（如索引）。</p>
+<p>&nbsp;</p>
+<h2 id="NVM-tuple-Heap-thread-local"><a href="#NVM-tuple-Heap-thread-local" class="headerlink" title="NVM-tuple Heap thread local"></a>NVM-tuple Heap <code>thread local</code></h2><p>Zen 将所有 tuple 存储在这个 NVM-tuple Heap 中，类似一个表。</p>
 <ul>
-<li>一个表包含了若干个固定大小的页，每个页包含固定数目的 tuple
-槽位。</li>
-<li>一个 NVM-tuple 包含了一个 header（transaction ID, cts, deleted, LP）
-和数据。</li>
+<li>一个表包含了若干个固定大小的页，每个页包含固定数目的 tuple 槽位。</li>
+<li>一个 NVM-tuple 包含了一个 header（transaction ID, cts, deleted, LP） 和数据。</li>
 <li>一个堆中可能包含若干个版本的 tuple</li>
 </ul>
 <p>header 中数据位的用途：</p>
+<div class="table-container">
 <table>
 <thead>
-<tr class="header">
+<tr>
 <th>Kind</th>
 <th>Meaning</th>
 </tr>
 </thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td>Transaction ID</td>
 <td>事务的 ID</td>
 </tr>
-<tr class="even">
+<tr>
 <td>cts</td>
 <td>提交的时间戳</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>Deleted</td>
 <td>该逻辑 tuple 是否被删除</td>
 </tr>
-<tr class="even">
+<tr>
 <td>LP</td>
 <td>该 tuple 是否是该事务的最后一个 tuple</td>
 </tr>
 </tbody>
 </table>
-<p> </p>
-<h2 id="met-cache-thread-local">Met-Cache <code>thread local</code></h2>
-<p>为 NVM-tuple Heap 中的数据做一个缓存。为每个线程都有一份。</p>
+</div>
+<p>&nbsp;</p>
+<h2 id="Met-Cache-thread-local"><a href="#Met-Cache-thread-local" class="headerlink" title="Met-Cache thread local"></a>Met-Cache <code>thread local</code></h2><p>为 NVM-tuple Heap 中的数据做一个缓存。为每个线程都有一份。</p>
 <p>Cache 中数据位的作用：</p>
+<div class="table-container">
 <table>
 <thead>
-<tr class="header">
+<tr>
 <th>Kind</th>
 <th>Meaning</th>
 </tr>
 </thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td>NVM-Pointer</td>
 <td>指向 NVM 中对应 tuple</td>
 </tr>
-<tr class="even">
+<tr>
 <td>dirty</td>
 <td>是否被一个活跃的事务使用</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>clock</td>
 <td>用于伪LRU替换算法（时钟替换算法）</td>
 </tr>
-<tr class="even">
+<tr>
 <td>copy</td>
 <td>该 entry 是否已经被复制</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>CC-Meta</td>
 <td>保留，用于并发控制</td>
 </tr>
 </tbody>
 </table>
-<p> </p>
-<h2 id="indices-in-dram">Indices in DRAM</h2>
-<p>在 DRAM 中为每个 H-Table 创建一个 Indices，在崩溃恢复时重建</p>
-<p>对于 primary index，其指向最新版本的 tuple，即 Met-Cache 或者 NVM
-中的数据。</p>
+</div>
+<p>&nbsp;</p>
+<h2 id="Indices-in-DRAM"><a href="#Indices-in-DRAM" class="headerlink" title="Indices in DRAM"></a>Indices in DRAM</h2><p>在 DRAM 中为每个 H-Table 创建一个 Indices，在崩溃恢复时重建</p>
+<p>对于 primary index，其指向最新版本的 tuple，即 Met-Cache 或者 NVM 中的数据。</p>
 <p>要求该索引结构满足并发需要，同时只有被提交的项目才是可视的。</p>
-<p> </p>
-<h2 id="nvm-space-management">NVM Space Management</h2>
-<p>管理 NVM 的空间回收和分配。</p>
-<p>   </p>
-<h1 id="metadata-enhanced-tuple-cache">Metadata-enhanced tuple
-cache</h1>
-<h2 id="基本思路">基本思路</h2>
-<ul>
+<p>&nbsp;</p>
+<h2 id="NVM-Space-Management"><a href="#NVM-Space-Management" class="headerlink" title="NVM Space Management"></a>NVM Space Management</h2><p>管理 NVM 的空间回收和分配。</p>
+<p>&nbsp;<br>&nbsp;</p>
+<h1 id="Metadata-enhanced-tuple-cache"><a href="#Metadata-enhanced-tuple-cache" class="headerlink" title="Metadata-enhanced tuple cache"></a>Metadata-enhanced tuple cache</h1><h2 id="基本思路"><a href="#基本思路" class="headerlink" title="基本思路"></a>基本思路</h2><ul>
 <li>不为每个 tuple 创建一个元数据</li>
-<li>在 DRAM 中为每个线程创建一个 Met-Cache
-用来协助当前事务运行，比如缓存最近使用的
-tuple，为并发控制提供元数据协助。</li>
+<li>在 DRAM 中为每个线程创建一个 Met-Cache 用来协助当前事务运行，比如缓存最近使用的 tuple，为并发控制提供元数据协助。</li>
 </ul>
-<h2 id="具体做法">具体做法</h2>
-<ul>
-<li>线程只允许写属于自己的 Met-Cache，但是可以读其他线程的 Met-Cache
-或者 Tuple Heap（通过索引）。</li>
+<h2 id="具体做法"><a href="#具体做法" class="headerlink" title="具体做法"></a>具体做法</h2><ul>
+<li>线程只允许写属于自己的 Met-Cache，但是可以读其他线程的 Met-Cache 或者 Tuple Heap（通过索引）。</li>
 <li>当需要修改的 tuple 来自其他线程的领域时，需要设置 copy 位</li>
 <li>通过 CLOCK 算法，伪 LRU 地替换 Cache 中数据</li>
 </ul>
-<h2 id="特点">特点</h2>
-<ul>
+<h2 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h2><ul>
 <li>消除不同线程在数据上的竞争</li>
 <li>将 NVM 上的读写转移到 DRAM 上</li>
 <li>崩溃的事务不会造成多余的 NVM 写入</li>
 <li>在 DRAM 上实现并发控制</li>
 </ul>
-<p>   </p>
-<h1 id="log-free-persistent-transactions">Log-free persistent
-transactions</h1>
-<h2 id="基本思路-1">基本思路</h2>
-<ul>
+<p>&nbsp;<br>&nbsp;</p>
+<h1 id="Log-free-persistent-transactions"><a href="#Log-free-persistent-transactions" class="headerlink" title="Log-free persistent transactions"></a>Log-free persistent transactions</h1><h2 id="基本思路-1"><a href="#基本思路-1" class="headerlink" title="基本思路"></a>基本思路</h2><ul>
 <li>移除 log 和检查点</li>
-<li>通过元组具有的 ID 属性和 cts <code>commit timestamp</code>
-、事务的提交标志位 <code>LP</code> 来保证原子性。</li>
+<li>通过元组具有的 ID 属性和 cts <code>commit timestamp</code> 、事务的提交标志位 <code>LP</code> 来保证原子性。</li>
 <li>在写入数据时不覆盖过去的数据，类似 MVCC。</li>
 </ul>
-<h2 id="具体做法-1">具体做法</h2>
-<p>分为三个阶段：</p>
+<h2 id="具体做法-1"><a href="#具体做法-1" class="headerlink" title="具体做法"></a>具体做法</h2><p>分为三个阶段：</p>
 <ul>
 <li><code>Perform</code>，在 DRAM 中执行事务</li>
 <li><code>Persist</code>，将新的 tuple 持久化到 NVM 中</li>
 <li><code>Maintenance</code>，垃圾回收，收集淘汰的 tuple</li>
 </ul>
-<h3 id="perform">Perform</h3>
-<ul>
-<li>通过主索引查找 tuple。如果 tuple 在 NVM，则将它读到 Met-Cache
-中，更新索引</li>
+<h3 id="Perform"><a href="#Perform" class="headerlink" title="Perform"></a>Perform</h3><ul>
+<li>通过主索引查找 tuple。如果 tuple 在 NVM，则将它读到 Met-Cache 中，更新索引</li>
 <li>在 DRAM 上执行事务</li>
-<li>检查所有接触的 Met-Cache 条目，假如有 dirty 的，将其从 NVM-tuple
-恢复，以便重试时在 Met-Cache 中找到该条目。</li>
+<li>检查所有接触的 Met-Cache 条目，假如有 dirty 的，将其从 NVM-tuple 恢复，以便重试时在 Met-Cache 中找到该条目。</li>
 </ul>
 <blockquote>
-<p><strong>Zen 在替换出 Met-Cache 中 tuple 条目时不需要将其写回
-NVM</strong></p>
+<p><strong>Zen 在替换出 Met-Cache 中 tuple 条目时不需要将其写回 NVM</strong></p>
 <p>有三种情况：</p>
-<ol type="1">
+<ol>
 <li>如果它是只读的，则不需要更改</li>
 <li>如果它是之前的事务留下的，则已经在 commit 时被持久化到 NVM 中了</li>
 <li>如果它被一个已经崩溃的事务修改过的，则本来就是无效的</li>
 </ol>
 </blockquote>
-<h3 id="persist">Persist</h3>
-<ul>
-<li>将一个 tuple 持久化到一个 NVM-tuple Heap
-的空槽中（不覆盖原有数据）</li>
-<li>持久化的顺序无所谓，在最后一个 tuple 持久化后加上一个 LP
-位，表示已经提交完成。</li>
+<h3 id="Persist"><a href="#Persist" class="headerlink" title="Persist"></a>Persist</h3><ul>
+<li>将一个 tuple 持久化到一个 NVM-tuple Heap 的空槽中（不覆盖原有数据）</li>
+<li>持久化的顺序无所谓，在最后一个 tuple 持久化后加上一个 LP 位，表示已经提交完成。</li>
 </ul>
-<h3 id="maintenance">Maintenance</h3>
-<ul>
-<li>每个线程都有一个垃圾回收器，回收 NVM 上的 tuple：
-<ul>
-<li>当提交了一个与其他 NVM tuple
-相同键值的条目，则将旧项目加入回收队列</li>
-<li>在从 Met-Cache 逐出一个条目时，垃圾回收器查看该条目是否有 copy
-位，有的时候才能被收集其 NVM
-tuple。（意味着该条目被其他已经提交的事务复制了，“Note that E must have
-been copied to another region by a committed transaction T , and T must
-have written a new version of the tuple”，这里感觉怪怪的，之前明明设置
-copy 位时事务还没提交<a
-href="Metadata-enhanced%20tuple%20cache">Metadata-enhanced tuple
-cache</a>）</li>
-</ul></li>
+<h3 id="Maintenance"><a href="#Maintenance" class="headerlink" title="Maintenance"></a>Maintenance</h3><ul>
+<li>每个线程都有一个垃圾回收器，回收 NVM 上的 tuple：<ul>
+<li>当提交了一个与其他 NVM tuple 相同键值的条目，则将旧项目加入回收队列</li>
+<li>在从 Met-Cache 逐出一个条目时，垃圾回收器查看该条目是否有 copy 位，有的时候才能被收集其 NVM tuple。（意味着该条目被其他已经提交的事务复制了，“Note that E must have been copied to another region by a committed transaction T , and T must have written a new version of the tuple”，这里感觉怪怪的，之前明明设置 copy 位时事务还没提交<a href="Metadata-enhanced tuple cache">Metadata-enhanced tuple cache</a>）</li>
+</ul>
+</li>
 <li>回收队列上的条目不能被马上释放，因为可能还有事务在用到该版本。</li>
-<li>通过用每个线程最后提交事务的cts，定期计算全局的最小 min_cts，将所有
-cts &lt; min_cts 的都释放掉</li>
+<li>通过用每个线程最后提交事务的cts，定期计算全局的最小 min_cts，将所有 cts &lt; min_cts 的都释放掉</li>
 </ul>
-<h3 id="crash-recovery">Crash Recovery</h3>
-<ul>
-<li>重建索引和 NVM 空间管理数据结构，其他的比如 Met-Cache
-就不需要恢复了。</li>
-<li>对于没有 LP
-位的版本数据，就是没有提交成功的。首先得到最大的已提交事务的时间戳，然后通过和那个最大时间戳比，得到所有已经提交的
-tuple。</li>
-<li>提出了一个算法能够扫描一遍得出所有未提交事务，同时建立索引
-Algorithm2
-<ul>
-<li>扫描一遍，当遇到一个有 LP 位的 tuple 时，令 ts-commit =
-max(ts-commit, cts)。同时更新索引。如果对应 tuple 索引已经存在，则比较
-cts 留下最新的那个。</li>
-<li>扫描期间，遇到了 timestamp &gt; ts-commit 的，放在一个列表 pending
-list 里</li>
+<h3 id="Crash-Recovery"><a href="#Crash-Recovery" class="headerlink" title="Crash Recovery"></a>Crash Recovery</h3><ul>
+<li>重建索引和 NVM 空间管理数据结构，其他的比如 Met-Cache 就不需要恢复了。</li>
+<li>对于没有 LP 位的版本数据，就是没有提交成功的。首先得到最大的已提交事务的时间戳，然后通过和那个最大时间戳比，得到所有已经提交的 tuple。</li>
+<li>提出了一个算法能够扫描一遍得出所有未提交事务，同时建立索引 Algorithm2<ul>
+<li>扫描一遍，当遇到一个有 LP 位的 tuple 时，令 ts-commit = max(ts-commit, cts)。同时更新索引。如果对应 tuple 索引已经存在，则比较 cts 留下最新的那个。</li>
+<li>扫描期间，遇到了 timestamp &gt; ts-commit 的，放在一个列表 pending list 里</li>
 <li>扫描完成后，此时 ts-commit 为已提交事务的最大 cts。</li>
-<li>扫描完成后，对 pending list 中所有 tuple，再次扫描，所有 timestamp
-&gt; ts-commit 的都是未提交成功的。而对于那些提交成功的，更新索引。</li>
-</ul></li>
+<li>扫描完成后，对 pending list 中所有 tuple，再次扫描，所有 timestamp &gt; ts-commit 的都是未提交成功的。而对于那些提交成功的，更新索引。</li>
 </ul>
-<p>   </p>
-<h1 id="lightweight-nvm-space-management">Lightweight NVM space
-management</h1>
-<h2 id="基本思路-2">基本思路</h2>
-<ul>
+</li>
+</ul>
+<p>&nbsp;<br>&nbsp;</p>
+<h1 id="Lightweight-NVM-space-management"><a href="#Lightweight-NVM-space-management" class="headerlink" title="Lightweight NVM space management"></a>Lightweight NVM space management</h1><h2 id="基本思路-2"><a href="#基本思路-2" class="headerlink" title="基本思路"></a>基本思路</h2><ul>
 <li>目的是减少 NVM 空间管理的持久化操作。</li>
 </ul>
-<h2 id="具体做法-2">具体做法</h2>
-<ul>
+<h2 id="具体做法-2"><a href="#具体做法-2" class="headerlink" title="具体做法"></a>具体做法</h2><ul>
 <li>完全将分配的元数据放在 DRAM</li>
 <li>每个线程都有自己的堆区域和分配器</li>
 <li>按页分配~~</li>
 </ul>
-<p>   </p>
-<h1 id="mvcc-based-adaptive-execution">MVCC-based adaptive
-execution</h1>
-<h2 id="基本思路-3">基本思路</h2>
-<ul>
+<p>&nbsp;<br>&nbsp;</p>
+<h1 id="MVCC-based-adaptive-execution"><a href="#MVCC-based-adaptive-execution" class="headerlink" title="MVCC-based adaptive execution"></a>MVCC-based adaptive execution</h1><h2 id="基本思路-3"><a href="#基本思路-3" class="headerlink" title="基本思路"></a>基本思路</h2><ul>
 <li>目的是有效的执行长事务同时保证系统资源的利用率</li>
 <li>长事务容易引发饥饿问题或者不能充分利用并行的问题。</li>
 </ul>
-<h2 id="具体做法-3">具体做法</h2>
-<p>考虑两种长事务：只读长事务和读写长事务。前者较为常见，后者比较少见。因此对前者做详细处理，后者简单粗暴一点~~</p>
+<h2 id="具体做法-3"><a href="#具体做法-3" class="headerlink" title="具体做法"></a>具体做法</h2><p>考虑两种长事务：只读长事务和读写长事务。前者较为常见，后者比较少见。因此对前者做详细处理，后者简单粗暴一点~~</p>
 <p>一些细节详见论文 4.1</p>
-<h3 id="长事务的执行">长事务的执行</h3>
-<p>对于只读长事务：</p>
+<h3 id="长事务的执行"><a href="#长事务的执行" class="headerlink" title="长事务的执行"></a>长事务的执行</h3><p>对于只读长事务：</p>
 <ul>
-<li>设置其 cts 位当前全局的最小 cts -
-1。这样只读长事务只能看到一个在其他活跃更新事务提交之前的快照。</li>
-<li>当出现 Met-Cache 缺失时，不需要再往 Met-Cache 替换东西，直接从 NVM
-读就是了。节省了资源利用</li>
+<li>设置其 cts 位当前全局的最小 cts - 1。这样只读长事务只能看到一个在其他活跃更新事务提交之前的快照。</li>
+<li>当出现 Met-Cache 缺失时，不需要再往 Met-Cache 替换东西，直接从 NVM 读就是了。节省了资源利用</li>
 <li>采用两种状态：排他状态和检测状态。检测状态中，事务正常执行，需要时不时检查资源使用情况，当有频繁的崩溃重试等导致资源浪费，则进入排他阶段。排他阶段中，选中一个长事务，单线程执行到结束。</li>
 </ul>
 <p>对于更新长事务，直接进入排他阶段。</p>
-<h3 id="长事务的检测">长事务的检测</h3>
-<ul>
+<h3 id="长事务的检测"><a href="#长事务的检测" class="headerlink" title="长事务的检测"></a>长事务的检测</h3><ul>
 <li>事务具有更新，它访问的 tuple 数量大于一个阈值（95%）。</li>
 <li>NVM 分配器内可用的空间资源小于一定阈值（5%）。</li>
 <li>崩溃的工作达到一定阈值（16 million）。</li>
 </ul>
-<p>   </p>
-<h1 id="numa-aware-soft-partition">NUMA-aware soft partition</h1>
-<h2 id="基本思路-4">基本思路</h2>
-<ul>
+<p>&nbsp;<br>&nbsp;</p>
+<h1 id="NUMA-aware-soft-partition"><a href="#NUMA-aware-soft-partition" class="headerlink" title="NUMA-aware soft partition"></a>NUMA-aware soft partition</h1><h2 id="基本思路-4"><a href="#基本思路-4" class="headerlink" title="基本思路"></a>基本思路</h2><ul>
 <li>目的是充分利用 NUMA 的特点，最小化 remote 访问。</li>
 <li>尽量不使用数据迁移</li>
 <li>线程隔离的资源，能够做成本地 NUMA 节点的</li>
 <li>允许本地写和任意读</li>
-<li>对于 Zen 这种本地写来说，其实 NUMA
-的最大限制来自于其事务分配线程的随机性；假如同一个键值的事务都能让同一个线程来进行，那样就能一直
-NUMA local。但是这样对于集中访问比如 Zipfian
-就很不友好，因为很多资源没有利用上。于是用软分块的方式（键值
-Hash）将其分散到各个 NUMA 节点上</li>
+<li>对于 Zen 这种本地写来说，其实 NUMA 的最大限制来自于其事务分配线程的随机性；假如同一个键值的事务都能让同一个线程来进行，那样就能一直 NUMA local。但是这样对于集中访问比如 Zipfian 就很不友好，因为很多资源没有利用上。于是用软分块的方式（键值 Hash）将其分散到各个 NUMA 节点上</li>
 </ul>
-<h2 id="具体做法-4">具体做法</h2>
-<p>主要思想是用软分块
-<code>soft partition</code>。动态使用工作负载的访问特点。</p>
+<h2 id="具体做法-4"><a href="#具体做法-4" class="headerlink" title="具体做法"></a>具体做法</h2><p>主要思想是用软分块 <code>soft partition</code>。动态使用工作负载的访问特点。</p>
 <ul>
 <li>将表 logically 分为若干个 partition，映射到不同 NUMA 节点上。</li>
-<li>对于一个事务，通过其要访问的 partition，计算其 NUMA
-亲和度。将其分配到最相关的 NUMA
-节点上。具体算法感觉怪怪的，详见论文4.2.2
-Algorithm3、Algorithm4。感觉就是最多最近访问，毕竟对于 Zen
-这种本地写来说，多次本地写意味着访问的 tuple 都是本地的。</li>
+<li>对于一个事务，通过其要访问的 partition，计算其 NUMA 亲和度。将其分配到最相关的 NUMA 节点上。具体算法感觉怪怪的，详见论文4.2.2 Algorithm3、Algorithm4。感觉就是最多最近访问，毕竟对于 Zen 这种本地写来说，多次本地写意味着访问的 tuple 都是本地的。</li>
 <li>分配事务到对应 NUMA 节点的线程上进行。</li>
 </ul>
 
@@ -667,13 +553,7 @@ Algorithm3、Algorithm4。感觉就是最多最近访问，毕竟对于 Zen
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#introduction"><span class="nav-number">1.</span> <span class="nav-text">Introduction</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E-nvm-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E7%B3%BB%E7%BB%9F%E7%9A%84%E8%AE%BE%E8%AE%A1%E5%8E%9F%E5%88%99"><span class="nav-number">1.1.</span> <span class="nav-text">基于 NVM
-数据结构和系统的设计原则</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E-nvm-%E7%9A%84-oltp-%E7%9A%84%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">基于 NVM 的 OLTP 的数据管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#mmdb-main-memory-database"><span class="nav-number">2.1.</span> <span class="nav-text">MMDB (Main Memory Database)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#wbl-write-behind-logging"><span class="nav-number">2.2.</span> <span class="nav-text">WBL (Write-behind logging)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#foedus"><span class="nav-number">2.3.</span> <span class="nav-text">FOEDUS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#zen"><span class="nav-number">2.4.</span> <span class="nav-text">Zen</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#zen-%E7%9A%84%E7%BB%84%E6%88%90%E6%9E%B6%E6%9E%84"><span class="nav-number">3.</span> <span class="nav-text">Zen 的组成架构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#nvm-tuple-heap-thread-local"><span class="nav-number">3.1.</span> <span class="nav-text">NVM-tuple Heap
-thread local</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#met-cache-thread-local"><span class="nav-number">3.2.</span> <span class="nav-text">Met-Cache thread local</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#indices-in-dram"><span class="nav-number">3.3.</span> <span class="nav-text">Indices in DRAM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#nvm-space-management"><span class="nav-number">3.4.</span> <span class="nav-text">NVM Space Management</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#metadata-enhanced-tuple-cache"><span class="nav-number">4.</span> <span class="nav-text">Metadata-enhanced tuple
-cache</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF"><span class="nav-number">4.1.</span> <span class="nav-text">基本思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%81%9A%E6%B3%95"><span class="nav-number">4.2.</span> <span class="nav-text">具体做法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%B9%E7%82%B9"><span class="nav-number">4.3.</span> <span class="nav-text">特点</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#log-free-persistent-transactions"><span class="nav-number">5.</span> <span class="nav-text">Log-free persistent
-transactions</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF-1"><span class="nav-number">5.1.</span> <span class="nav-text">基本思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%81%9A%E6%B3%95-1"><span class="nav-number">5.2.</span> <span class="nav-text">具体做法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#perform"><span class="nav-number">5.2.1.</span> <span class="nav-text">Perform</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#persist"><span class="nav-number">5.2.2.</span> <span class="nav-text">Persist</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#maintenance"><span class="nav-number">5.2.3.</span> <span class="nav-text">Maintenance</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#crash-recovery"><span class="nav-number">5.2.4.</span> <span class="nav-text">Crash Recovery</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#lightweight-nvm-space-management"><span class="nav-number">6.</span> <span class="nav-text">Lightweight NVM space
-management</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF-2"><span class="nav-number">6.1.</span> <span class="nav-text">基本思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%81%9A%E6%B3%95-2"><span class="nav-number">6.2.</span> <span class="nav-text">具体做法</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#mvcc-based-adaptive-execution"><span class="nav-number">7.</span> <span class="nav-text">MVCC-based adaptive
-execution</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF-3"><span class="nav-number">7.1.</span> <span class="nav-text">基本思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%81%9A%E6%B3%95-3"><span class="nav-number">7.2.</span> <span class="nav-text">具体做法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%95%BF%E4%BA%8B%E5%8A%A1%E7%9A%84%E6%89%A7%E8%A1%8C"><span class="nav-number">7.2.1.</span> <span class="nav-text">长事务的执行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%95%BF%E4%BA%8B%E5%8A%A1%E7%9A%84%E6%A3%80%E6%B5%8B"><span class="nav-number">7.2.2.</span> <span class="nav-text">长事务的检测</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#numa-aware-soft-partition"><span class="nav-number">8.</span> <span class="nav-text">NUMA-aware soft partition</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF-4"><span class="nav-number">8.1.</span> <span class="nav-text">基本思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%81%9A%E6%B3%95-4"><span class="nav-number">8.2.</span> <span class="nav-text">具体做法</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Introduction"><span class="nav-number">1.</span> <span class="nav-text">Introduction</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E-NVM-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E5%92%8C%E7%B3%BB%E7%BB%9F%E7%9A%84%E8%AE%BE%E8%AE%A1%E5%8E%9F%E5%88%99"><span class="nav-number">1.1.</span> <span class="nav-text">基于 NVM 数据结构和系统的设计原则</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E-NVM-%E7%9A%84-OLTP-%E7%9A%84%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">基于 NVM 的 OLTP 的数据管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#MMDB-Main-Memory-Database"><span class="nav-number">2.1.</span> <span class="nav-text">MMDB (Main Memory Database)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#WBL-Write-behind-logging"><span class="nav-number">2.2.</span> <span class="nav-text">WBL (Write-behind logging)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FOEDUS"><span class="nav-number">2.3.</span> <span class="nav-text">FOEDUS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Zen"><span class="nav-number">2.4.</span> <span class="nav-text">Zen</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Zen-%E7%9A%84%E7%BB%84%E6%88%90%E6%9E%B6%E6%9E%84"><span class="nav-number">3.</span> <span class="nav-text">Zen 的组成架构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#NVM-tuple-Heap-thread-local"><span class="nav-number">3.1.</span> <span class="nav-text">NVM-tuple Heap thread local</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Met-Cache-thread-local"><span class="nav-number">3.2.</span> <span class="nav-text">Met-Cache thread local</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Indices-in-DRAM"><span class="nav-number">3.3.</span> <span class="nav-text">Indices in DRAM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#NVM-Space-Management"><span class="nav-number">3.4.</span> <span class="nav-text">NVM Space Management</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Metadata-enhanced-tuple-cache"><span class="nav-number">4.</span> <span class="nav-text">Metadata-enhanced tuple cache</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF"><span class="nav-number">4.1.</span> <span class="nav-text">基本思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%81%9A%E6%B3%95"><span class="nav-number">4.2.</span> <span class="nav-text">具体做法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%B9%E7%82%B9"><span class="nav-number">4.3.</span> <span class="nav-text">特点</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Log-free-persistent-transactions"><span class="nav-number">5.</span> <span class="nav-text">Log-free persistent transactions</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF-1"><span class="nav-number">5.1.</span> <span class="nav-text">基本思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%81%9A%E6%B3%95-1"><span class="nav-number">5.2.</span> <span class="nav-text">具体做法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Perform"><span class="nav-number">5.2.1.</span> <span class="nav-text">Perform</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Persist"><span class="nav-number">5.2.2.</span> <span class="nav-text">Persist</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Maintenance"><span class="nav-number">5.2.3.</span> <span class="nav-text">Maintenance</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Crash-Recovery"><span class="nav-number">5.2.4.</span> <span class="nav-text">Crash Recovery</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Lightweight-NVM-space-management"><span class="nav-number">6.</span> <span class="nav-text">Lightweight NVM space management</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF-2"><span class="nav-number">6.1.</span> <span class="nav-text">基本思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%81%9A%E6%B3%95-2"><span class="nav-number">6.2.</span> <span class="nav-text">具体做法</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#MVCC-based-adaptive-execution"><span class="nav-number">7.</span> <span class="nav-text">MVCC-based adaptive execution</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF-3"><span class="nav-number">7.1.</span> <span class="nav-text">基本思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%81%9A%E6%B3%95-3"><span class="nav-number">7.2.</span> <span class="nav-text">具体做法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%95%BF%E4%BA%8B%E5%8A%A1%E7%9A%84%E6%89%A7%E8%A1%8C"><span class="nav-number">7.2.1.</span> <span class="nav-text">长事务的执行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%95%BF%E4%BA%8B%E5%8A%A1%E7%9A%84%E6%A3%80%E6%B5%8B"><span class="nav-number">7.2.2.</span> <span class="nav-text">长事务的检测</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#NUMA-aware-soft-partition"><span class="nav-number">8.</span> <span class="nav-text">NUMA-aware soft partition</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF-4"><span class="nav-number">8.1.</span> <span class="nav-text">基本思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%81%9A%E6%B3%95-4"><span class="nav-number">8.2.</span> <span class="nav-text">具体做法</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -687,19 +567,19 @@ execution</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a cl
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-count">12</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-count">4</span>
         <span class="site-state-item-name">categories</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-count">12</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>
@@ -734,7 +614,7 @@ execution</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a cl
 <div class="copyright">
   
   &copy; 
-  <span itemprop="copyrightYear">2022</span>
+  <span itemprop="copyrightYear">2023</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>

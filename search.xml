@@ -4,13 +4,145 @@
   
     
     <entry>
-      <title>Hello World</title>
-      <link href="/2023/07/27/hello-world/"/>
-      <url>/2023/07/27/hello-world/</url>
+      <title></title>
+      <link href="/2023/08/16/MemVirtualization/"/>
+      <url>/2023/08/16/MemVirtualization/</url>
       
-        <content type="html"><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p><h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><pre><code class="bash">$ hexo new &quot;My New Post&quot;</code></pre><p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p><h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><pre><code class="bash">$ hexo server</code></pre><p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p><h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><pre><code class="bash">$ hexo generate</code></pre><p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p><h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><pre><code class="bash">$ hexo deploy</code></pre><p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>]]></content>
+        <content type="html"><![CDATA[]]></content>
       
       
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>CPU Virtualization</title>
+      <link href="/2023/08/16/CPUVirtualization/"/>
+      <url>/2023/08/16/CPUVirtualization/</url>
+      
+        <content type="html"><![CDATA[<h2 id="Intel-VT-x"><a href="#Intel-VT-x" class="headerlink" title="Intel VT-x"></a>Intel VT-x</h2><p>目前，Intel VT技术包含CPU、内存和I／O三方面的虚拟化技术。CPU硬件辅助虚拟化技术，分为对应安腾架构的VT-i(Intel Virtualization Technology for ltanium)和对应x86架构的VT-x(Intel Virtualization Technologyfor x86)两个版本。</p><p>Intel VT-x 提供了两个运行环境：<strong>根环境 root</strong> 和 <strong>非根环境 Non-root</strong>。<br>根环境专门为 VMM 准备，更没有 VT-x 的 X86 差不多，只是多了支持 VT-x 的指令。非根环境则作为一个受限环境用来运行多个虚拟机。</p><p>根操作模式与非根操作模式都有相应的特权级0(Ring 0)至特权级3(Ring 3)。<br>VMM 运行在根模式的特权级 0，guest OS 的内核运行在非根模式的特权级 0，guest OS 的应用程序运行在非根模式的特权级 3。<br>运行环境之间相互转化，从根环境到非根环境叫<strong>VMEntry</strong>；从非根环境到根环境叫<strong>VMExit</strong>。<br>VT-x定义了VMEntry操作，使CPU由根模式切换到非根模式，运行客户机操作系统指令。若在非根模式执行了敏感指令或发生了中断等，会执行VMExit操作，切换回根模式运行VMM。</p><p>VT-x定义了VMEntry操作，使CPU由根模式切换到非根模式，运行客户机操作系统指令。若在非根模式执行了敏感指令或发生了中断等，会执行VMExit操作，切换回根模式运行VMM。</p><p>VMX操作模式流程：</p><ol><li>VMM 执行 VMXON 指令进入 VMX 操作模式。</li><li>VMM 可执行 VMLAUNCH 指令或 VMRESUME 指令产生 VM Entry 操作，进入到 guest OS，此时 CPU 处于非根模式。</li><li>guest OS 执行特权指令等情况导致VMExit的发生，此时将陷入VMM，CPU切换为根模式。VMM 根据 VMExit 的原因作出相应处理，处理完成后将转到步骤 2，继续运行 guest OS。</li><li>VMM可决定是否退出 VMX 操作模式，通过执行 VMXOFF 指令来完成。</li></ol><p>为更好地支持CPU虚拟化，VMX新定义了**虚拟机控制结构 VMCS(Virtual Machine ControlStructure)**。VMCS是保存在内存中的数据结构，其包括虚拟CPU的相关寄存器的内容及相关的控制信息。CPU在发生VM Entry或VMExit时，都会查询和更新VMCS。VMM也可通过指令来配置VMCS，达到对虚拟处理器的管理。</p><p>每个虚拟处理器都需将VMCS与内存中的一块区域联合起来，此区域称为VMCS区域。对VMCS区域的操纵是通过VMCS指针来实现的，这个指针是一个指向VMCS的64位的地址值。VMCS区域是一个最大不超过4KB的内存块，且需4KB对齐。</p><p>VMCS区域分为三个部分：</p><ul><li>偏移0起是 <strong>VMCS 版本标识</strong>，通过不同的版本号，CPU可维护不同的VMCS数据格式；</li><li>偏移4起是 <strong>VMX 中止指示器</strong>，在VMX中止发生时，CPU会在此处存入中止的原因；</li><li>偏移8起是 <strong>VMCS 数据区</strong>，这一部分控制VMX非根操作及VMX切换</li></ul><p>VMCS 的数据区包含了VMX配置信息：VMM在启动虚拟机前配置其哪些操作会触发VMExit。VMExit 产生后，处理器把执行权交给VMM 以完成控制，然后VMM 通过指令触发VMEntry 返回原来的虚拟机或调度到另一个虚拟机。</p><p>VMCS 的数据结构中，每个虚拟机一个，加上虚拟机的各种状态信息，共由3个部分组成，如之前的VMCS架构图所示：</p><ol><li><strong>Gueststate</strong>：该区域保存了虚拟机运行时的状态，在VMEntry 时由处理器装载；在VMExit时由处理器保存。它又由两部分组成：<ol><li>Guest OS寄存器状态。它包括控制寄存器、调试寄存器、段寄存器等各类寄存器的值。</li><li>Guest OS非寄存器状态。用它可以记录当前处理器所处状态，是活跃、停机（HLT）、关机（Shutdown）还是等待启动处理器间中断（Startup-IPI）。</li></ol></li><li><strong>Hoststate</strong>：该区域保存了VMM 运行时的状态，主要是一些寄存器值，在VMExit 时由处理器装载。</li><li><strong>Control data</strong>：该区域包含几部分数据信息，分别是：<ol><li><strong>虚拟机执行控制域</strong>（VM-Execution control fields）。VMM 主要通过配置该区域来控制虚拟机在非根环境中的执行行为。基于针脚的虚拟机执行控制。它决定在发生外部中断或不可屏蔽中断（NMI）要不要发生VMExit。基于处理器的虚拟机执行控制。它决定虚拟机执行RDTSC、HLT、INVLPG 等指令时要不要发生VMExit。</li><li><strong>VMExit 控制域</strong>（VMExit control fields）。该区域控制VMExit 时的行为。当VMExit 发生后处理器是否处于64 位模式；当因为外部中断发生VMExit 时，处理器是否响应中断控制器并且获得中断向量号。VMM 可以用它来定制当VMExit 发生时要保存哪些MSR 并且装载哪些MSR。MSR是CPU的模式寄存器，设置CPU的工作环境和标识cpu的工作状态。</li><li><strong>VMEntry 控制域</strong>（VMEntry control fields）。该区域控制VMEntry 时的行为。它决定处理器VMEntry 后是否处于IA-32e 模式。与VMExit 的MSR控制类似，VMM 用它来定制当VMEntry 发生时要装载哪些MSR。VMM 可以配置VMEntry 时通过虚拟机的IDT向其发送一个事件。在此可以配置将使用IDT 的向量、中断类型（硬件或软件中断）、错误码等。</li><li><strong>VMExit 信息域</strong>（VMExit information fields）。该只读区域包括最近一次发生的VMExit 信息。试图对该区域执行写操作将产生错误。。此处存放VMExit 的原因以及针对不同原因的更多描述信息、中断或异常向量号、中断类型和错误码、通过 IDT 发送事件时产生的VMExit 信息、指令执行时产生的 VMExit 信息。<br>有了VMCS结构后，对虚拟机的控制就是读写VMCS结构。后面对vCPU设置中断，检查状态实际上都是在读写VMCS数据结构。</li></ol></li></ol>]]></content>
+      
+      
+      <categories>
+          
+          <category> Virtualization </category>
+          
+          <category> Hardware </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Virtualization </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>Virtualization Introduction</title>
+      <link href="/2023/08/13/Virtualization/"/>
+      <url>/2023/08/13/Virtualization/</url>
+      
+        <content type="html"><![CDATA[<h2 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h2><p>虚拟化是将单一物理设备模拟为相互隔离的多个虚拟设备，同时保证这些虚拟设备的高效性。</p><h3 id="Hypervisor"><a href="#Hypervisor" class="headerlink" title="Hypervisor"></a>Hypervisor</h3><p>Hypervisor 也成为 VMM(virtual machine monitor) 虚拟机管理程序，负责与不同虚拟机之间打交道。<br>在没有虚拟化硬件扩展的情况下 guest OS 和 guest application 都需要在 非特权 de-privileged 模式下运行，此时 Hypervisor 跑在特权模式下，负责管理硬件资源，与 VM 互动。</p><h3 id="特权指令"><a href="#特权指令" class="headerlink" title="特权指令"></a>特权指令</h3><p>Popek 和 Goldberg 有一篇虚拟化的经典论文，把需要在特权模式下执行的指令分成了两类：</p><ul><li><strong>sensitive instructions 敏感指令</strong>：操作特权资源的指令，包括修改虚拟机的运行模式或者下面物理机的状态；读写时钟、中断等寄存器；访问存储保护系统、地址重定位系统及所有的I&#x2F;O指令。</li><li><strong>privileged instructions 特权指令</strong>：系统中有一些操作和管理关键系统资源的指令，这些指令只有在最高特权级上能够正确运行。如果在非最高特权级上运行，特权指令会引发一个异常，处理器会陷入到最高特权级，交由系统软件处理了。</li></ul><p>其中，敏感指令是特权指令的子集。这种标准被称为 classically virtualized 经典可虚拟化模型。</p><h3 id="特权接触和陷入模拟"><a href="#特权接触和陷入模拟" class="headerlink" title="特权接触和陷入模拟"></a>特权接触和陷入模拟</h3><p>虚拟化场景下，要求 GuestOS 内核的特权解除。当其需要执行特权指令时，会产生 trap，被 VMM 捕获并由 VMM 完成。这就是 **特权解除和陷入模拟(Privilege deprivileging&#x2F;Trap-and-Emulation)**。</p><blockquote><p> 对于一般 RISC 处理器，如 MIPS，PowerPC 以及SPARC，敏感指令肯定是特权指令，但是x86 例外，x86绝大多数的敏感指令是特权指令，但是由于部分敏感指令不是特权指令，执行这些指令的时候不会自动trap被VMM捕获。</p></blockquote><h3 id="虚拟化"><a href="#虚拟化" class="headerlink" title="虚拟化"></a>虚拟化</h3><h4 id="完全虚拟化-Pure-virtualization"><a href="#完全虚拟化-Pure-virtualization" class="headerlink" title="完全虚拟化 Pure virtualization"></a>完全虚拟化 Pure virtualization</h4><p>完全虚拟化要求硬件架构是可虚拟化的，当 捕获(trap) 进入 hypervisor 后，由 hypervisor 去模拟敏感指令的执行，这项技术也被称为陷入模式(trap-and-emulate)。当一个 guest OS 想要去访问特权资源（物理外设），就会产生一个 trap 唤醒 hypervisor，hypervisor 去模拟这个访问，然后返回到 guest OS 的下一条指令去继续执行。</p><p>其采用了<strong>优先级压缩技术 Ring Compression</strong> 和 <strong>二进制代码翻译技术 Binary Translation</strong><br>优先级压缩技术使得 VMM 和 Guest 分别运行在不同特权级下。 对x86架构而言，即VMM运行在最高特权级别Ring 0下，Guest OS运行在Ring 1下，用户应用运行在Ring 3下。因此，Guest OS的核心指令无法直接下达到计算机系统硬件执行，而是需要经过VMM的捕获和模拟执行（部分难以虚拟化的指令需要通过二进制翻译技术进行转换）。</p><h4 id="半虚拟化-para-virtualization"><a href="#半虚拟化-para-virtualization" class="headerlink" title="半虚拟化 para-virtualization"></a>半虚拟化 para-virtualization</h4><p>半虚拟化通过修改 guest OS 的源码，使其避免难以虚拟化的指令（虚拟化漏洞）。操作系统通常会使用到处理器提供的全部功能，例如特权级别、地址空间和控制寄存器等。类虚拟化首先要解决的问题就是如何陷入VMM。典型的做法是修改 guest OS 的相关代码，让 os主动让出特权级别，而运行在次一级特权上。而当 guest OS 需要执行特权指令时，触发保护机制并通过 VMM 模拟。</p><p>半虚拟化通常能够达到比全虚拟化更好的性能，但是需要修改 OS 源码，而非运行时译码和处理。</p><blockquote><p>其与 partial-virtualization 有些差异，这只虚拟化部分外设来满足某些专门的软件的执行环境，但是不能运行所有可能运行在物理机上的软件。</p></blockquote><h2 id="发展历史"><a href="#发展历史" class="headerlink" title="发展历史"></a>发展历史</h2><p>从虚拟化概念的提出，虚拟化技术经过了三个阶段的进化。</p><p><strong>第一个阶段</strong>，所有的虚拟管理程序(hypervisor)在内核态实现，实现对稀缺资源的多路复用。例如 IBM VM&#x2F;370。<br><strong>第二个阶段</strong>，主流的虚拟机管理程序将管理函数的实现迁移到用户态，通过系统调用在宿主操作系统上做文章。然而，一些功能仍然需要到内核态进行，比如指令模拟和虚拟内存。<br><strong>第三个阶段</strong>，一些厂商开始从硬件层面支持虚拟化（Intel VMX 和 AMD SVM），进一步降低了虚拟化中内核操作的占比，将这一部分功能转由硬件代为实现，提高了性能。</p><p>现在很多基于硬件扩展的虚拟机管理程序分为两部分组成：**内核模式的模块(kernel-mode module)<strong>和</strong>用户模式的模块(user-mode helper)**。比如，经典的 Linux&#x2F;KVM-based 虚拟化系统就包含了一个 KVM 内核模块，同时对每个 VM 有一个用户态的 helper，比如 QEMU。其中，KVM 模块和硬件扩展和宿主内核打交道，用户模块则负责 VM 的管理和 IO 虚拟化。</p><h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>虚拟化系统内核态的组件总是会有各种各样的问题，威胁到主机的安全。比如在 KVM 的发展中就有了上百个 CVE 漏洞报告。这些漏洞可能被利用从而进行 Denial of Service(DoS) 攻击。一旦 KVM 的内核模块被黑入了，那么其上运行的各个虚拟机都难逃其难。</p><blockquote><p>CVE（Common Vulnerabilities and Exposures）的全称是公共漏洞和暴露，是公开披露的网络安全漏洞列表。IT人员、安全研究人员查阅CVE获取漏洞的详细信息，进而根据漏洞评分确定漏洞解决的优先级。</p></blockquote>]]></content>
+      
+      
+      <categories>
+          
+          <category> Virtualization </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Virtualization </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title></title>
+      <link href="/2023/08/09/2PL/"/>
+      <url>/2023/08/09/2PL/</url>
+      
+        <content type="html"><![CDATA[]]></content>
+      
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title></title>
+      <link href="/2023/08/09/MVCC/"/>
+      <url>/2023/08/09/MVCC/</url>
+      
+        <content type="html"><![CDATA[]]></content>
+      
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>OCC And Its Derivation</title>
+      <link href="/2023/08/09/OCC/"/>
+      <url>/2023/08/09/OCC/</url>
+      
+        <content type="html"><![CDATA[<p>乐观并发控制协议(Optimistic Concurrent Control, OCC) 作为一种并发控制协议，在事务内存乃至数据库系统中都十分常见。在黑书《数据库系统概论》中描述为“基于验证的并发控制协议”。</p><h2 id="朴素-OCC-Conventional-OCC"><a href="#朴素-OCC-Conventional-OCC" class="headerlink" title="朴素 OCC (Conventional OCC)"></a>朴素 OCC (Conventional OCC)</h2><p>OCC 的基本思路是乐观地执行事务，然后在事务要提交地过程中验证操作的正确性并决定成功提交还是崩溃重试。它将事务的执行过程分为三个阶段：执行阶段、验证阶段、写入阶段。</p><h3 id="执行阶段"><a href="#执行阶段" class="headerlink" title="执行阶段"></a>执行阶段</h3><p>以读写操作为例。每个事务都有一个读集合和写集合：其中每次读操作会将其记录到读集合中，每次写操作会将其记录到写集合中。<br>所有的写操作需要将数据读出到写集合中，然后在私有的副本上做修改。其之后的读写操作也会在该副本上进行。<br>这些过程<strong>理论上</strong>不需要上锁。（实际实现中可能需要上锁，为的是能够保证事务不会读到部分更新的数据，同时也能够提早发现冲突，但是也带来一定开销）</p><h3 id="验证阶段"><a href="#验证阶段" class="headerlink" title="验证阶段"></a>验证阶段</h3><p>事务需要对其操作进行验证，来确保事务执行的一致性。黑书中的介绍是对比多个并发事务的读写集合，确保没有发生 <strong>读-写冲突</strong> 或者 <strong>写-写冲突</strong>。此时，需要对事务读写集合的有效生命周期进行规定，即从其开始验证到没有比它更早开始的事务。但是从实现角度上看，这个实现起来未免引入非常大的同步开销。</p><p>一个改进是为数据项附加时间戳。有一个单调递增的全局时间戳，每次事务开始时会将其原子加一，获得当前事务的起始时间戳 <code>sts</code>；在开始验证时将其原子加一，并获得当前事务的提交时间戳 <code>cts</code>。<br>根据这个时间戳，事务读写集合的有效生命周期能够确定到当前系统中不存在事务有小于当前事务 <code>cts</code> 的 <code>sts</code>。此时无需再验证其读写集合。</p><p>但是这个同步开销依然不少。因此，人们直接将线程同步的工作交给时间戳来完成。在执行时，将对应数据项的时间戳读入读写集合。在验证的过程中，确保该时间戳仍未改变，表示数据也未被改变。此时验证通过。相反，如果时间戳改变了，则标明数据已经被修改。（原因是事务需要在写入阶段顺带用 <code>cts</code> 更新时间戳）</p><h3 id="写入阶段"><a href="#写入阶段" class="headerlink" title="写入阶段"></a>写入阶段</h3><p>在这一阶段中，事务将所有数据写入持久性存储器。同时用 <code>cts</code> 更新数据项的时间戳。事务执行完毕。</p><h3 id="其他讨论"><a href="#其他讨论" class="headerlink" title="其他讨论"></a>其他讨论</h3><p>某种意义上讲，只读事务可以不需要验证阶段和写入阶段。同时，验证阶段和写入阶段都需要保持互斥；也就是说，我在一个数据项的时间戳验证、数据更新和时间戳更新，这一堆操作需要“原子”地完成。</p><p>除此之外，还有说在读集合验证结束后就能够直接释放其对应地锁。不过我觉得，应该先对写集合元素上锁，然后对读集合上锁、验证，此时才能够释放读集合中元素的锁。这里还涉及死锁问题，大部分事务内存系统对写集合进行排序再上锁；保证读集合中不存在与写集合相同数据对象，每次验证读集合中一个对象，先上锁，验证时间戳，解锁。</p><p>当然，这只是最基本的 OCC 实现。还有很多变种。比如为了保证<strong>崩溃一致性</strong>，我们可以采用 WAL 的机制，在刚进入写入阶段、未更新原有数据时，先写入 redo 或者 undo 日志并将其持久化，然后再写入数据和更新时间戳。</p><h2 id="Silo"><a href="#Silo" class="headerlink" title="Silo"></a>Silo</h2><p>在论文 <em>Speedy Transaction in Multicore In-Memory Database</em> 中提出了一种名为 Silo 的并发控制协议（准确来说，这是一种内存数据库，不过这里只讨论它的并发控制策略）。它的目的是为了尽可能避免中心化操作的瓶颈，使用了 epoch-based<br> 的组提交策略。</p><h2 id="TicToc"><a href="#TicToc" class="headerlink" title="TicToc"></a>TicToc</h2><p>在论文 <em>TicToc: Time Traveling Optimistic Concurrency Control</em> 中提出了一种名为 TicToc 的并发控制协议。它考虑到全局分配时间戳的瓶颈，细粒度地管理各个数据项的时间戳更新。</p><h3 id="去中心化时间戳管理"><a href="#去中心化时间戳管理" class="headerlink" title="去中心化时间戳管理"></a>去中心化时间戳管理</h3><p>考虑一系列操作：</p><ul><li>A read(x)</li><li>B write(x)</li><li>B commits</li><li>A write(y)</li></ul><p>这个操作顺序是符合可串行化 Serializable 的定义的($A \rightarrow B$)，但是根据传统 OCC 的做法，A 在进入验证时因为 x 的时间戳已经被修改，从而验证失败并且崩溃。</p><p>所以 TicToc 做的就是在验证阶段生成时间戳，然后在写入阶段用该时间戳更新所有数据项。其中时间戳的生成规则如下<br>$$<br>    \exist commit_{ts}, \<br>    (\forall v \in {versions read by T}, v.wts \le commit_ts \le v.rts) \<br>    \wedge (\forall v \in {versions written by T}, v.rts &lt; commit_ts)<br>$$<br>这样所有已经提交的读事务都被排在写事务之前，所有已经提交的写事务都被排在读事务之前。</p><h3 id="事务流程"><a href="#事务流程" class="headerlink" title="事务流程"></a>事务流程</h3><p><strong>读阶段</strong>。事务将数据、wts、rts载入读&#x2F;写集合。</p><p><strong>验证阶段</strong>。开始时，需要将所有写集合元素上锁。然后计算 <code>cts</code>。计算如下：</p><pre><code>commit_ts = 0for e in WriteSet do    // e.tuple.rts means we need to read the latest timestamp of this data tuple.    commit_ts = max(commit_ts, e.tuple.rts + 1) endfor e in ReadSet do    commit_ts = max(commit_ts, e.commit_ts, e.wts)end</code></pre><p>接着需要检测是否发生冲突</p><pre><code>for r in ReadSet do     if r.rts &lt; commit_ts then        # Begin atomic section        if r.wts != r.tuple.wts or (r.tuple.rts &lt;= commit_ts and isLocked(r.tuple) and r.tuple not in WriteSet) then        abort()    else        r.tuple.rts = max(commit_ts, r.tuple.rts)    end    # End atomic sectionend</code></pre><p><strong>写入阶段</strong>。用计算得到的 <code>cts</code> 去更新所有数据项的时间戳。读集合的元素只需要更新读时间戳；写集合的元素需要同时更新两个时间戳。当然还有更新所有数据。</p><h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><p>[1] Tu, Stephen, Wenting Zheng, Eddie Kohler, Barbara Liskov, and Samuel Madden. “Speedy Transactions in Multicore In-Memory Databases.” In Proceedings of the Twenty-Fourth ACM Symposium on Operating Systems Principles, 18–32. Farminton Pennsylvania: ACM, 2013. <a href="https://doi.org/10.1145/2517349.2522713">https://doi.org/10.1145/2517349.2522713</a>.</p><p>[2] Yu, Xiangyao, Andrew Pavlo, Daniel Sanchez, and Srinivas Devadas. “TicToc: Time Traveling Optimistic Concurrency Control.” In Proceedings of the 2016 International Conference on Management of Data, 1629–42. San Francisco California USA: ACM, 2016. <a href="https://doi.org/10.1145/2882903.2882935">https://doi.org/10.1145/2882903.2882935</a>.</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Transaction </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Transaction </tag>
+            
+            <tag> Concurrent Control </tag>
+            
+            <tag> OCC </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>Transaction Introduction</title>
+      <link href="/2023/08/09/Transaction/"/>
+      <url>/2023/08/09/Transaction/</url>
+      
+        <content type="html"><![CDATA[<p><strong>事务</strong> 是访问并可能更新各种数据项的一个程序执行单元。简单的说，一个事务是这么一种操作，要么能够完成，要么不引起任何影响。也就是遵从 all-or-nothing 原语。</p><h2 id="事务的属性-Property"><a href="#事务的属性-Property" class="headerlink" title="事务的属性 Property"></a>事务的属性 Property</h2><ul><li><strong>原子性 Atomicity</strong>：事务的所有操作在数据库中要么全部正确反映出来，要么完全不反映</li><li><strong>一致性 Consistency</strong>：以隔离的方式执行事务以保持事务的一致性</li><li><strong>隔离性 Isolative</strong>：尽管多个事务可能并发执行，但是需要保证，对于每个事务，其运行时不需关心其他事务的运行情况。确保隔离性是数据库系统中 <em>并发控制</em> 的责任。</li><li><strong>持久性 Durability</strong>：当一个事务完成之后，它对数据库的改变是永久的，即使出现系统故障也是如此。</li></ul><h2 id="事务的隔离等级-Isolation-Level"><a href="#事务的隔离等级-Isolation-Level" class="headerlink" title="事务的隔离等级 Isolation Level"></a>事务的隔离等级 Isolation Level</h2><p>在事务执行过程中，可能出现多种违背事务属性的情况：</p><ul><li><strong>不可重复读 Unrepeated read</strong>：一个事务中的多次重复的读操作返回的数据不同</li><li><strong>脏读 Dirty read</strong>：事务执行过程中读取到未提交事务或者中止事务的更新数据</li><li><strong>脏写 Dirty write</strong>：事务执行过程中将要写入的数据已经被未提交事务或者中止事务更新过</li><li><strong>幻读 Magic read</strong>：读到已提交插入的数据，幻读与不可重复读类似，幻读是查询到了另一个事务已提交的新插入数据，而不可重复读是查询到了另一个事务已提交更新的数据。</li></ul><p>根据 MySQL 规定的隔离等级，有如下：</p><ul><li><strong>可串行化 Serializable</strong>：通常保证可串行化的执行。但是一些数据库系统某些情况下允许非可串行化执行的方式来实现这种隔离级别</li><li><strong>可重复读 Repeatable read</strong>：只允许读取已提交的数据，并进一步要求在一个事务两次读取一个数据项期间，其他事务不得更新该数据项</li><li><strong>已提交读 Read commited</strong>：只允许读取已提交的数据，当不要求可重复读</li><li><strong>未提交读 Read uncommited</strong>：允许读取未提交数据</li></ul><p>其中，未提交读会导致脏读、不可重复读和幻读；已提交读会导致不可重复读和幻读；可重复读会导致幻读。<br>这几种隔离等级下，事务均不允许发生脏写。</p><h2 id="崩溃一致性-Crash-Consistency"><a href="#崩溃一致性-Crash-Consistency" class="headerlink" title="崩溃一致性 Crash Consistency"></a>崩溃一致性 Crash Consistency</h2><p>事务也需要满足崩溃一致性。当系统由于断电或者种种不可预知的原因崩溃时，已提交事务的影响需要保持持久化或者在重启后能够被恢复；同时，未提交事务和崩溃事务的影响在系统重启后需要被消除。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Transaction </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Transaction </tag>
+            
+        </tags>
       
     </entry>
     

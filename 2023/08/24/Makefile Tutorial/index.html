@@ -1,0 +1,210 @@
+<!DOCTYPE html><html class="appearance-auto" lang="en"><head><meta charset="UTF-8"><title>Makefile</title><meta name="description" content="This man is too lazy to introduce himself"><meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, initial-scale=1"><!-- Google Analytics --><!-- End Google Analytics -->
+<!-- Baidu Analytics --><!-- End Baidu Analytics --><link rel="icon" href="/images/favicon.ico"><link rel="stylesheet" href="/style/common/bulma.css"><link rel="stylesheet" href="/style/base.css"><link rel="stylesheet" href="/style/common/helper.css"><script src="/js/common.js"></script><link rel="stylesheet" href="/style/post.css"><link rel="stylesheet" href="/style/themes/highlight-theme-light.css"><link rel="stylesheet" href="/style/common/jquery.fancybox.min.css"><script src="/js/highlight.pack.js"></script><meta name="description" content="Makefile 介绍make 命令执行时，需要当前目录下有一个 Makefile 文件，以便其执行其中指定的步骤。若使用别的文件名来写 Makefile，则需要用 -f 或者 --file 指定文件。
+编写 Makefile 的原则应该是只编译被修改过的文件，不重复编译，最后将所有编译输出链接从而生成可执行文件。虽然经常举 C 语言编译链接为例，但是由于 Unix Makefile 和 Unix&amp;#x2F;Linux 是紧密结合的，可以将其视作特殊规则的 shell 脚本，其中执行的命令主要是 shell 命令。
+Makefile 语法规则target: prerequisites
+command
+
+
+target 也就是一个目标文件，可以是目标文件，也可以是执行文件。还可以是一个标签(Label)。
+p.."><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+</head><body class="is-flex is-flex-direction-column"><header class="header-widget is-flex-shrink-0 is-hidden-mobile"><div class="container is-fullhd is-flex is-justify-content-space-between is-align-items-center is-full-height"><section class="is-hidden-mobile is-flex-shrink-0"><h2><a href="/">Xinrui Zheng's blog</a></h2></section><h3 class="is-hidden-mobile is-family-serif is-full-height is-flex is-align-items-center is-flex-shrink-0"><div class="is-full-height" id="postTopic"><p class="is-full-height is-flex-shrink-0 is-flex is-align-items-center is-justify-content-center">Makefile</p><p class="is-full-height is-flex-shrink-0 is-flex is-align-items-center is-justify-content-center">Click back to the top</p></div></h3><aside class="is-flex-shrink-0"><h3 class="is-inline-block"><a href="/">Home</a></h3><h3 class="is-inline-block"><a href="/about">About</a></h3><h3 class="is-inline-block"><a href="/archives">Archives</a></h3></aside></div></header><header class="is-flex header-widget is-flex-shrink-0 is-align-items-center is-justify-content-center is-hidden-tablet"><h3 class="is-inline-block"><a href="/">Home</a></h3><h3 class="is-inline-block"><a href="/about">About</a></h3><h3 class="is-inline-block"><a href="/archives">Archives</a></h3></header><main><main class="container is-max-widescreen content section post-page pt-4 px-4"><div class="columns is-flex-desktop is-justify-content-center is-flex-direction-row-reverse"><div class="column is-3 is-hidden-mobile"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Makefile-%E4%BB%8B%E7%BB%8D"><span class="toc-text">Makefile 介绍</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Makefile-%E8%AF%AD%E6%B3%95%E8%A7%84%E5%88%99"><span class="toc-text">Makefile 语法规则</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Makefile-%E5%B7%A5%E4%BD%9C%E6%96%B9%E5%BC%8F"><span class="toc-text">Makefile 工作方式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Makefile-%E5%8F%98%E9%87%8F"><span class="toc-text">Makefile 变量</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Makefile-%E8%87%AA%E5%8A%A8%E6%8E%A8%E5%AF%BC"><span class="toc-text">Makefile 自动推导</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B8%85%E7%A9%BA%E7%9B%AE%E6%A0%87%E6%96%87%E4%BB%B6"><span class="toc-text">清空目标文件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BC%95%E5%85%A5%E5%85%B6%E4%BB%96%E6%96%87%E4%BB%B6"><span class="toc-text">引入其他文件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F"><span class="toc-text">环境变量</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%80%9A%E9%85%8D%E7%AC%A6"><span class="toc-text">通配符</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%AA%E7%9B%AE%E6%A0%87"><span class="toc-text">伪目标</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%9A%E7%9B%AE%E6%A0%87"><span class="toc-text">多目标</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9D%99%E6%80%81%E6%A8%A1%E5%BC%8F"><span class="toc-text">静态模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%98%E9%87%8F"><span class="toc-text">变量</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%98%E9%87%8F%E6%9B%BF%E6%8D%A2"><span class="toc-text">变量替换</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%BD%E5%8A%A0%E5%8F%98%E9%87%8F%E5%80%BC"><span class="toc-text">追加变量值</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#override"><span class="toc-text">override</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%9B%AE%E6%A0%87%E5%8F%98%E9%87%8F"><span class="toc-text">目标变量</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9D%A1%E4%BB%B6%E5%88%A4%E6%96%AD"><span class="toc-text">条件判断</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%87%BD%E6%95%B0"><span class="toc-text">函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%98%E9%87%8F"><span class="toc-text">自动化变量</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B6%E4%BB%96%E5%8A%9F%E8%83%BD"><span class="toc-text">其他功能</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%96%87%E4%BB%B6%E6%90%9C%E5%AF%BB"><span class="toc-text">文件搜寻</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%B4%E6%96%87%E4%BB%B6"><span class="toc-text">头文件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%98%BE%E7%A4%BA%E5%91%BD%E4%BB%A4"><span class="toc-text">显示命令</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B5%8C%E5%A5%97%E6%89%A7%E8%A1%8C"><span class="toc-text">嵌套执行</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%8F"><span class="toc-text">宏</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F-1"><span class="toc-text">环境变量</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%80%80%E5%87%BA%E7%A0%81"><span class="toc-text">退出码</span></a></li></ol></li></ol></div><div class="column is-9"><header class="my-4"><a href="/tags/Tool"><i class="tag post-item-tag">Tool</i></a><a href="/tags/Language"><i class="tag post-item-tag">Language</i></a></header><h1 class="mt-0 mb-1 is-family-serif" id="postTitle">Makefile</h1><time class="has-text-grey" datetime="2023-08-24T11:31:37.786Z">2023-08-24</time><article class="mt-2 post-content"><h2 id="Makefile-介绍"><a href="#Makefile-介绍" class="headerlink" title="Makefile 介绍"></a>Makefile 介绍</h2><p><code>make</code> 命令执行时，需要当前目录下有一个 <strong>Makefile</strong> 文件，以便其执行其中指定的步骤。若使用别的文件名来写 Makefile，则需要用 <code>-f</code> 或者 <code>--file</code> 指定文件。</p>
+<p>编写 Makefile 的原则应该是只编译被修改过的文件，不重复编译，最后将所有编译输出链接从而生成可执行文件。虽然经常举 C 语言编译链接为例，但是由于 Unix Makefile 和 Unix&#x2F;Linux 是紧密结合的，可以将其视作特殊规则的 shell 脚本，其中执行的命令主要是 shell 命令。</p>
+<h2 id="Makefile-语法规则"><a href="#Makefile-语法规则" class="headerlink" title="Makefile 语法规则"></a>Makefile 语法规则</h2><pre><code class="Makefile">target: prerequisites
+command
+</code></pre>
+<ul>
+<li><strong>target</strong> 也就是一个目标文件，可以是目标文件，也可以是执行文件。还可以是一个标签(Label)。</li>
+<li><strong>prerequisites</strong> 就是，要生成那个 target 所需要的文件或是目标。</li>
+<li><strong>command</strong> 也就是make需要执行的命令。（任意的 shell 命令）</li>
+</ul>
+<p>这是主要的编写逻辑，如</p>
+<pre><code class="Makefile">CC=gcc
+
+ALL: hello.o
+    CC -o hello hello.o
+
+hello.o: hello.c
+    CC -c hello.c
+
+clean: 
+    rm hello hello.o
+</code></pre>
+<p>中规定了 <em>ALL</em> 目标依赖于 <em>hello.o</em>，同时 <em>hello.o</em> 又依赖于 <em>hello.c</em>，即我们的源文件，从而，当我们执行 <code>make</code> 或者 <code>make all</code> 时，会编译输出 hello 可执行文件。</p>
+<p>需要注意的是，在定义好依赖关系后，后续的那一行定义了如何生成目标文件的操作系统命令，<strong>一定要以一个 Tab 键作为开头</strong>。Tab 键并不能被随意使用。</p>
+<h3 id="Makefile-工作方式"><a href="#Makefile-工作方式" class="headerlink" title="Makefile 工作方式"></a>Makefile 工作方式</h3><p>假设当前目录下有上述的 Makefile 文件和源文件 hello.c。</p>
+<ul>
+<li><code>make</code> 会在当前目录下寻找名字为 “Makefile” 或者 “makefile” 的文件。</li>
+<li>读入被 include 的其他文件</li>
+<li>初始化文件中变量</li>
+<li>找到后，会找到文件中的第一个 target，上述例子中为 <code>ALL</code>，为一个标签，将其作为最终的目标</li>
+<li>分析依赖关系，建立依赖关系链</li>
+<li>根据其依赖关系，他会寻找 hello.o 目标文件，若 hello.o 不存在，或是其依赖的后面的源文件修改时间比 hello.o 要新，则执行相应的命令</li>
+<li>依次遍历，得到需要执行的拓扑顺序后，执行相应指令。</li>
+</ul>
+<p>需要注意的是，make 只关注文件依赖关系的错误，而不管命令执行中的错误。只要依赖关系正常满足，照样能够完成。</p>
+<h3 id="Makefile-变量"><a href="#Makefile-变量" class="headerlink" title="Makefile 变量"></a>Makefile 变量</h3><p>在 Makefile 中使用变量如：</p>
+<pre><code class="Makefile">object = hello.o bye.o
+</code></pre>
+<p>之后，就能够通过 <code>$(object)</code> 引用该变量</p>
+<h3 id="Makefile-自动推导"><a href="#Makefile-自动推导" class="headerlink" title="Makefile 自动推导"></a>Makefile 自动推导</h3><p>GNU的make很强大，它可以自动推导文件以及文件依赖关系后面的命令，于是我们就没必要去在每一个[.o]文件后都写上类似的命令，因为，我们的make会自动识别，并自己推导命令</p>
+<p>只要make看到一个[.o]文件，它就会自动的把[.c]文件加在依赖关系中，如果make找到一个whatever.o，那么whatever.c，就会是whatever.o的依赖文件。并且 cc -c whatever.c 也会被推导出来，于是，我们的makefile再也不用写得这么复杂。我们的是新的makefile又出炉了：</p>
+<pre><code class="Makefile">CC=gcc
+
+ALL:hello.o
+    gcc -o hello hello.o
+
+hello.o: 
+
+clean:
+    rm hello hello.o
+</code></pre>
+<h3 id="清空目标文件"><a href="#清空目标文件" class="headerlink" title="清空目标文件"></a>清空目标文件</h3><p>一般风格是：</p>
+<pre><code class="Makefile">clean: 
+    rm hello $(objects)
+</code></pre>
+<p>更为稳健的风格是：</p>
+<pre><code class="Makefile">.PHONY: clean
+clean: 
+    -rm hello $(objects)
+</code></pre>
+<p><strong>.PHONY</strong> 意思表示clean是一个“伪目标”，。而在rm命令前面加了一个小减号的意思就是，也许某些文件出现问题，但不要管，继续做后面的事。不成文的规矩是——“clean从来都是放在文件的最后”。</p>
+<h3 id="引入其他文件"><a href="#引入其他文件" class="headerlink" title="引入其他文件"></a>引入其他文件</h3><p>通过 <code>include</code> 可以将其他文件引入当前文件中，类似于 C 语言头文件的直接复制。</p>
+<pre><code class="Makefile">include &lt;filename&gt;
+</code></pre>
+<p>除此之外，可以引入多个文件（用空格隔开），或者使用类似于 shell 的通配符</p>
+<h3 id="环境变量"><a href="#环境变量" class="headerlink" title="环境变量"></a>环境变量</h3><p>如果你的当前环境中定义了环境变量MAKEFILES，那么，make会把这个变量中的值做一个类似于include的动作。这个变量中的值是其它的Makefile，用空格分隔。只是，它和include不同的是，从这个环境变中引入的Makefile的“目标”不会起作用，如果环境变量中定义的文件发现错误，make也会不理。</p>
+<h3 id="通配符"><a href="#通配符" class="headerlink" title="通配符"></a>通配符</h3><p>make 和 Unix shell 相同，支持若干种通配符：<code>*</code>、<code>?</code>、<code>[...]</code>，</p>
+<h3 id="伪目标"><a href="#伪目标" class="headerlink" title="伪目标"></a>伪目标</h3><p>由于目标假如是标签，它不能和文件名重名，不然会被依赖关系监测到并假如依赖链。<br>因此通过 <code>.PHONY</code> 指明其为伪目标，不管是否有这个文件，都会执行这个目标。</p>
+<h3 id="多目标"><a href="#多目标" class="headerlink" title="多目标"></a>多目标</h3><p>可能有多个目标同时依赖于同一个文件</p>
+<pre><code class="Makefile">bigoutput littleoutput : text.g
+    generate text.g -$(subst output,,$@) &gt; $@
+</code></pre>
+<p>等价于</p>
+<pre><code class="Makefile">bigoutput : text.g
+    generate text.g -big &gt; bigoutput
+littleoutput : text.g
+    generate text.g -little &gt; littleoutput
+</code></pre>
+<h3 id="静态模式"><a href="#静态模式" class="headerlink" title="静态模式"></a>静态模式</h3><p>静态模式可以更加容易地定义多目标的规则，语法如下：</p>
+<pre><code class="Makefile">&lt;targets...&gt;: &lt;target-pattern&gt;: &lt;prereq-patterns ...&gt;
+　　　&lt;commands&gt;
+</code></pre>
+<p>其中：</p>
+<ul>
+<li><strong>targets</strong> 定义了一系列的目标文件，可以有通配符。是目标的一个集合。</li>
+<li><strong>target-parrtern</strong> 是指明了targets的模式，也就是的目标集模式。</li>
+<li><strong>prereq-parrterns</strong> 是目标的依赖模式，它对target-parrtern形成的模式再进行一次依赖目标的定义。</li>
+</ul>
+<pre><code class="Makefile">objects = foo.o bar.o
+all: $(objects)
+
+$(objects): %.o: %.c
+    $(CC) -c $(CFLAGS) $&lt; -o $@
+</code></pre>
+<h3 id="变量"><a href="#变量" class="headerlink" title="变量"></a>变量</h3><p>用变量定义变量，并不要求右值变量已经被定义，即可以推迟赋值</p>
+<pre><code class="Makefile">foo=$(bar)
+bar=$(ugh)
+ugh=Huh
+</code></pre>
+<p>这里 foo, bar, ugh 都是 Huh。但是这种定义也容易造成无限递归定义。<br>因此可以使用 <code>:=</code> 操作符，但是前面的变量就不能使用后来的变量了</p>
+<pre><code class="Makefile">x := foo
+y := $(x) bar
+x := later
+</code></pre>
+<p>这里 y 为 foo bar</p>
+<p>还有个 <code>?=</code> 操作符，如 <code>FOO ?= bar</code><br>其含义是，如果FOO没有被定义过，那么变量FOO的值就是“bar”，如果FOO先前被定义过，那么这条语将什么也不做</p>
+<h3 id="变量替换"><a href="#变量替换" class="headerlink" title="变量替换"></a>变量替换</h3><p>我们可以替换变量中的共有的部分，其格式是 <code>$(var:a=b)</code> 或是 <code>$&#123;var:a=b&#125;</code>，其意思是，把变量 var 中所有以 a 字串结尾的 <code>a</code> 替换成 <code>b</code> 字串。这里的结尾意思是空格或是结束符。如：</p>
+<pre><code class="Makefile">foo := a.o b.o c.o
+bar := $(foo:.o=.c)
+</code></pre>
+<p>bar 即为 a.c b.c c.c</p>
+<p>当然也可以使用静态模式替换变量，如：</p>
+<pre><code class="Makefile">foo := a.o b.o c.o
+bar := $(foo:%.o=%.c)
+</code></pre>
+<h3 id="追加变量值"><a href="#追加变量值" class="headerlink" title="追加变量值"></a>追加变量值</h3><p>我们可以使用“+&#x3D;”操作符给变量追加值，如：</p>
+<pre><code class="Makefile">objects = main.o 
+objects += another.o
+</code></pre>
+<p>则 objects 为 main.o another.o</p>
+<h3 id="override"><a href="#override" class="headerlink" title="override"></a>override</h3><p>如果有变量是通常make的命令行参数设置的，那么Makefile中对这个变量的赋值会被忽略。如果你想在Makefile中设置这类参数的值，那么，你可以使用“override”指示符。其语法是：</p>
+<pre><code class="Makefile">override &lt;variable&gt; = &lt;value&gt;
+override &lt;variable&gt; := &lt;value&gt;
+</code></pre>
+<h3 id="目标变量"><a href="#目标变量" class="headerlink" title="目标变量"></a>目标变量</h3><p>为特定目标设置私有的变量值</p>
+<pre><code class="Makefile">&lt;target ...&gt; : &lt;variable-assignment&gt;
+&lt;target ...&gt; : overide &lt;variable-assignment&gt;
+</code></pre>
+<p>如：</p>
+<pre><code class="Makefile">prog : CFLAGS = -g
+prog : prog.o foo.o bar.o
+    $(CC) $(CFLAGS) prog.o foo.o bar.o
+</code></pre>
+<p>这样，无论外部如何，prog 目标中，CFLAGS 一直是 -g</p>
+<h3 id="条件判断"><a href="#条件判断" class="headerlink" title="条件判断"></a>条件判断</h3><p><code>ifeq</code>、<code>ifneq</code>、<code>ifdef</code>、<code>ifndef</code>、<code>else</code>、<code>endif</code></p>
+<h3 id="函数"><a href="#函数" class="headerlink" title="函数"></a>函数</h3><p>函数调用，很像变量的使用，也是以“$”来标识的，其语法如下：</p>
+<pre><code class="Makefile">$(&lt;function&gt; &lt;arguments&gt;)
+$&#123;&lt;function&gt; &lt;arguments&gt;&#125;
+</code></pre>
+<p>这里，<code>&lt;function&gt;</code> 就是函数名，make支持的函数不多。<code>&lt;arguments&gt;</code> 是函数的参数，参数间以逗号“,”分隔，而函数名和参数之间以“空格”分隔。</p>
+<h3 id="自动化变量"><a href="#自动化变量" class="headerlink" title="自动化变量"></a>自动化变量</h3><p><code>$@</code><br>表示规则中的目标文件集。在模式规则中，如果有多个目标，那么，”$@”就是匹配于目标中模式定义的集合。</p>
+<p><code>$%</code><br>仅当目标是函数库文件中，表示规则中的目标成员名。例如，如果一个目标是”foo.a(bar.o)”，那么，<code>$%</code> 就是”bar.o”，<code>$@</code> 就是”foo.a”。如果目标不是函数库文件（Unix下是<br>[.a]，Windows下是[.lib]），那么，其值为空。</p>
+<p><code>$&lt;</code><br>依赖目标中的第一个目标名字。如果依赖目标是以模式（即”%”）定义的，那么<code>$&lt;</code> 将是符合模式的一系列的文件集。注意，其是一个一个取出来的。</p>
+<p><code>$?</code><br>所有比目标新的依赖目标的集合。以空格分隔。</p>
+<p><code>$^</code><br>所有的依赖目标的集合。以空格分隔。如果在依赖目标中有多个重复的，那个这个变量会去除重复的依赖目标，只保留一份。</p>
+<p><code>$+</code><br>这个变量很像”$^”，也是所有依赖目标的集合。只是它不去除重复的依赖目标。</p>
+<p><code>$*</code><br>这个变量表示目标模式中”%”及其之前的部分。如果目标是”dir&#x2F;a.foo.b”，并且目标的模式是”a.%.b”，那么，<code>$*</code>的值就是”dir &#x2F;a.foo”。这个变量对于构造有关联的文件名是比<br>较有较。如果目标中没有模式的定义，那么<code>$*</code>也就不能被推导出，但是，如果目标文件的后缀是 make所识别的，那么<code>$*</code>就是除了后缀的那一部分。例如：如果目标是”foo.c”<br>，因为”.c”是make所能识别的后缀名，所以，<code>$*</code>的值就是”foo”。这个特性是GNU make的，很有可能不兼容于其它版本的make，所以，你应该尽量避免使用<code>$*</code>，除非是在隐含规则或是静态模式中。如果目标中的后缀是make所不能识别的，那么<code>$*</code>就是空值。</p>
+<p>当你希望只对更新过的依赖文件进行操作时，<code>$?</code>在显式规则中很有用，例如，假设有一个函数库文件叫”lib”，其由其它几个object文件更新。那么把object文件打包的比较有效<br>率的Makefile规则是：</p>
+<pre><code class="Makefile">lib : foo.o bar.o lose.o win.o
+ar r lib $?
+</code></pre>
+<p>在上述所列出来的自动量变量中。四个变量（<code>$@、$&lt;、$%、$*</code>）在扩展时只会有一个文件，而另三个的值是一个文件列表。这七个自动化变量还可以取得文件的目录名或是在当前目录下的符合模式的文件名，只需要搭配上”D”或”F”字样。这是GNU make中老版本的特性，在新版本中，我们使用函数”dir”或”notdir”就可以做到了。”D”的含义就是Directory，就是目录，”F”的含义就是File，就是文件。</p>
+<p>下面是对于上面的七个变量分别加上”D”或是”F”的含义：</p>
+<p><code>$(@D)</code><br>表示<code>$@</code>的目录部分（不以斜杠作为结尾），如果<code>$@</code>值是”dir&#x2F;foo.o”，那么<code>$(@D)</code>就是”dir”，而如果<code>$@</code>中没有包含斜杠的话，其值就是”.”（当前目录）。</p>
+<p><code>$(@F)</code><br>表示<code>$@</code>的文件部分，如果<code>$@</code>值是”dir&#x2F;foo.o”，那么<code>$(@F)</code>就是”foo.o”，<code>$(@F)</code>相当于函数<code>$(notdir $@)</code>。</p>
+<p><code>$(*D)</code><br><code>$(*F)</code><br>和上面所述的同理，也是取文件的目录部分和文件部分。对于上面的那个例子，<code>$(*D)</code>返回”dir”，而<code>$(*F)</code>返回”foo”</p>
+<p><code>$(%D)</code><br><code>$(%F)</code><br>分别表示了函数包文件成员的目录部分和文件部分。这对于形同”archive(member)”形式的目标中的”member”中包含了不同的目录很有用。</p>
+<p><code>$(&lt;D)</code><br><code>$(&lt;F)</code><br>分别表示依赖文件的目录部分和文件部分。</p>
+<p><code>$(^D)</code><br><code>$(^F)</code><br>分别表示所有依赖文件的目录部分和文件部分。（无相同的）</p>
+<p><code>$(+D)</code><br><code>$(+F)</code><br>分别表示所有依赖文件的目录部分和文件部分。（可以有相同的）</p>
+<p><code>$(?D)</code><br><code>$(?F)</code><br>分别表示被更新的依赖文件的目录部分和文件部分。</p>
+<p>最后想提醒一下的是，对于<code>$&lt;</code>，为了避免产生不必要的麻烦，我们最好给<code>$</code>后面的那个特定字符都加上圆括号，比如，<code>$(&lt; )</code>就要比<code>$&lt;</code>要好一些。</p>
+<h2 id="其他功能"><a href="#其他功能" class="headerlink" title="其他功能"></a>其他功能</h2><h3 id="文件搜寻"><a href="#文件搜寻" class="headerlink" title="文件搜寻"></a>文件搜寻</h3><p>在一些大的工程中，有大量的源文件，我们通常的做法是把这许多的源文件分类，并存放在不同的目录中。所以，当make需要去找寻文件的依赖关系时，你可以在文件前加上路径，但最好的方法是把一个路径告诉make，让make在自动去找。</p>
+<p>Makefile文件中的特殊变量 <strong>VPATH</strong> 就是完成这个功能的，如果没有指明这个变量，make只会在当前的目录中去找寻依赖文件和目标文件。如果定义了这个变量，那么，make就会在当当前目录找不到的情况下，到所指定的目录中去找寻文件了。</p>
+<pre><code class="Makefile">VPATH = src:include
+</code></pre>
+<p>上面的定义指定了两个目录，make 会按照该顺序进行搜索，文件目录用冒号风格</p>
+<p>另一个是搜索文件的方式是通过 <code>vpath</code> 关键字：</p>
+<ul>
+<li><code>vpath &lt;pattern&gt; &lt;directories&gt;</code> 为符合模式的文件指定搜索目录</li>
+<li><code>vpath &lt;pattern&gt;</code> 清除符合该模式的文件搜索目录</li>
+<li><code>vpath</code> 清除所有已经设置的文件搜索目录</li>
+</ul>
+<h3 id="头文件"><a href="#头文件" class="headerlink" title="头文件"></a>头文件</h3><p>但是，如果是一个比较大型的工程，你必需清楚哪些C文件包含了哪些头文件，并且，你在加入或删除头文件时，也需要小心地修改 Makefile，这是一个很没有维护性的工作。为了避免这种繁重而又容易出错的事情，我们可以使用 C&#x2F;C++ 编译的一个功能。大多数的 C&#x2F;C++ 编译器都支持一个 <code>-M</code> 的选项，即自动找寻源文件中包含的头文件，并生成一个依赖关系。例如，如果我们执行下面的命令</p>
+<p>于是由编译器自动生成的依赖关系，这样一来，你就不必再手动书写若干文件的依赖关系，而由编译器自动生成了。需要注意的是，如果你使用 GNU 的 C&#x2F;C++ 编译器，你得用 <code>-MM</code> 参数，不然，<code>-M</code> 参数会把一些标准库的头文件也包含进来。</p>
+<p>GNU组织建议把编译器为每一个源文件的自动生成的依赖关系放到一个文件中，为每一个“name.c”的文件都生成一个“name.d”的Makefile文件，[.d]文件中就存放对应[.c]文件的依赖关系。于是，我们可以写出[.c]文件和[.d]文件的依赖关系，并让make自动更新或自成[.d]文件，并把其包含在我们的主Makefile中，这样，我们就可以自动化地生成每个文件的依赖关系了。</p>
+<pre><code class="Makefile">%.d: %.c
+    @set -e; rm -f $@; \
+    $(CC) -M $(CPPFLAGS) $&lt; &gt; $@.; \
+    sed &#39;s,
+    \.o[ :]*,\1.o $@ : ,g&#39; &lt; $@. &gt; $@; \
+    rm -f $@.
+</code></pre>
+<p>这个规则的意思是，所有的[.d]文件依赖于[.c]文件，“rm-f $@”的意思是删除所有的目标，也就是[.d]文件，第二行的意思是，为每个依赖文件“$&lt;”，也就是[.c]文件生成依赖文件，“$@”表示模式“%.d”文件，如果有一个C文件是name.c，那么“%”就是“name”，“”意为一个随机编号，第二行生成的文件有可能是“name.d.12345”，第三行使用sed命令做了一个替换，关于sed命令的用法请参看相关的使用文档。第四行就是删除临时文件。</p>
+<h3 id="显示命令"><a href="#显示命令" class="headerlink" title="显示命令"></a>显示命令</h3><p>通常，make会把其要执行的命令行在命令执行前输出到屏幕上。当我们用 <code>@</code> 字符在命令行前，那么，这个命令将不被make显示出来</p>
+<h3 id="嵌套执行"><a href="#嵌套执行" class="headerlink" title="嵌套执行"></a>嵌套执行</h3><p>如果你要传递变量到下级Makefile中，那么你可以使用这样的声明：<br><code>export&lt;variable ...&gt;</code></p>
+<p>如果你不想让某些变量传递到下级Makefile中，那么你可以这样声明：<br><code>unexport&lt;variable ...&gt;</code></p>
+<p>如果你要传递所有的变量，那么，只要一个export就行了。后面什么也不用跟，表示传递所有的变量。</p>
+<h3 id="宏"><a href="#宏" class="headerlink" title="宏"></a>宏</h3><p>如果Makefile中出现一些相同命令序列，那么我们可以为这些相同的命令序列定义一个变量。定义这种命令序列的语法以“define”开始，以“endef”结束</p>
+<pre><code class="Makefile">define run-yacc
+yacc $(firstword $^)
+mv y.tab.c $@
+endef
+</code></pre>
+<h3 id="环境变量-1"><a href="#环境变量-1" class="headerlink" title="环境变量"></a>环境变量</h3><p>make 运行时的系统环境变量可以在make开始运行时被载入到Makefile文件中，但是如果Makefile中已定义了这个变量，或是这个变量由make命令行带入，那么系统的环境变量的值将被覆盖。（如果make指定了“-e”参数，那么，系统环境变量将覆盖Makefile中定义的变量）</p>
+<h3 id="退出码"><a href="#退出码" class="headerlink" title="退出码"></a>退出码</h3><ul>
+<li>0 —— 表示成功执行。</li>
+<li>1 —— 如果make运行时出现任何错误，其返回1。</li>
+<li>2 —— 如果你使用了make的“-q”选项，并且make使得一些目标不需要更新，那么返回2</li>
+</ul>
+</article><section class="jump-container is-flex is-justify-content-space-between my-6"><!-- em is empty placeholder--><a class="button is-default" href="/2023/08/25/RISCV-CSR/" title="RISC-V CSR Introduction"><i class="iconfont icon-prev mr-2 has-text-grey"></i><span class="has-text-weight-semibold">Previous: RISC-V CSR Introduction</span></a><a class="button is-default" href="/2023/08/19/RISC-V%20PMP/" title="RISC-V Privileged Architecture"><span class="has-text-weight-semibold">Next: RISC-V Privileged Architecture</span><i class="iconfont icon-next ml-2 has-text-grey"></i></a></section><article class="mt-6 comment-container"><script async repo="BL-GS/BLGS.github.io" src="https://utteranc.es/client.js" issue-term="pathname" theme="preferred-color-scheme"></script></article></div></div></main></main><footer class="is-flex is-flex-direction-column is-align-items-center is-flex-shrink-0 is-family-serif"><section class="sns-container"><!-- Github--><a title="github" target="_blank" rel="noopener nofollow" href="//github.com/BL-GS"><i class="iconfont icon-github"></i></a><!-- Ins--><!-- RSS--><!-- 知乎--><a title="zhihu" target="_blank" rel="noopener nofollow" href="//zhihu.com/https://www.zhihu.com/people/blgs"><i class="iconfont icon-zhihu"></i></a><!-- 领英--><!-- 脸书--></section><p><span>Copyright ©</span><span> Xinrui Zheng 2023</span></p><div class="is-flex is-justify-content-center is-flex-wrap-wrap"><p>Powered by Hexo &verbar;&nbsp;</p><p class="is-flex is-justify-content-center"><a title="Hexo theme author" target="_blank" rel="noopener" href="//github.com/haojen">Theme by Haojen&nbsp;</a></p><div style="margin-top: 2px"><a class="github-button" title="github-button" target="_blank" rel="noopener" href="https://github.com/haojen/hexo-theme-Claudia" data-color-scheme="no-preference: light; light: light; dark: dark;" data-show-count="true"></a></div></div><div><span></span></div></footer><script async defer src="https://buttons.github.io/buttons.js"></script><script src="/js/jquery-3.6.1.min.js"></script><script src="/js/jquery-fancybox.min.js"></script><script src="/js/img_zoom.js"></script><script src="/js/post.js"></script></body></html>

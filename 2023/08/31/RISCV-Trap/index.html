@@ -1,0 +1,161 @@
+<!DOCTYPE html><html class="appearance-auto" lang="en"><head><meta charset="UTF-8"><title>RISC-V Trap</title><meta name="description" content="This man is too lazy to introduce himself"><meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, initial-scale=1"><!-- Google Analytics --><!-- End Google Analytics -->
+<!-- Baidu Analytics --><!-- End Baidu Analytics --><link rel="icon" href="/images/favicon.ico"><link rel="stylesheet" href="/style/common/bulma.css"><link rel="stylesheet" href="/style/base.css"><link rel="stylesheet" href="/style/common/helper.css"><script src="/js/common.js"></script><link rel="stylesheet" href="/style/post.css"><link rel="stylesheet" href="/style/themes/highlight-theme-light.css"><link rel="stylesheet" href="/style/common/jquery.fancybox.min.css"><script src="/js/highlight.pack.js"></script><meta name="description" content="RISC-V 将中断分为 软件中断、计时器中断、外部中断、中断和调试中断。
+RISC-V 当前并不支持硬件层面的 trap 嵌套，只能通过软件实现。
+Trap 处理在程序执行过程中触发了特定条件，产生中断：
+
+保存当前运行状态
+依据对应特权级的 ideleg 和 edeleg CSR，确定处理该 trap 所需要的特权级，然后跳转到指定的 trap 处理函数所在的位置（由 mtvec 指定）
+设置 epc、cause、tval、tinst 等 CSR 的值
+处理 trap
+调用 mret、sret 指令返回，恢复 trap 触发之前的状态
+
+保存当前运行状态用栈保存通用寄存器的值
+xstatus(x &amp;#x3D; m, s, h) CSR 负责保存 trap 发生时的中断使能、特权级等信息。其中 xIE, .."><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+</head><body class="is-flex is-flex-direction-column"><header class="header-widget is-flex-shrink-0 is-hidden-mobile"><div class="container is-fullhd is-flex is-justify-content-space-between is-align-items-center is-full-height"><section class="is-hidden-mobile is-flex-shrink-0"><h2><a href="/">Xinrui Zheng's blog</a></h2></section><h3 class="is-hidden-mobile is-family-serif is-full-height is-flex is-align-items-center is-flex-shrink-0"><div class="is-full-height" id="postTopic"><p class="is-full-height is-flex-shrink-0 is-flex is-align-items-center is-justify-content-center">RISC-V Trap</p><p class="is-full-height is-flex-shrink-0 is-flex is-align-items-center is-justify-content-center">Click back to the top</p></div></h3><aside class="is-flex-shrink-0"><h3 class="is-inline-block"><a href="/">Home</a></h3><h3 class="is-inline-block"><a href="/about">About</a></h3><h3 class="is-inline-block"><a href="/archives">Archives</a></h3></aside></div></header><header class="is-flex header-widget is-flex-shrink-0 is-align-items-center is-justify-content-center is-hidden-tablet"><h3 class="is-inline-block"><a href="/">Home</a></h3><h3 class="is-inline-block"><a href="/about">About</a></h3><h3 class="is-inline-block"><a href="/archives">Archives</a></h3></header><main><main class="container is-max-widescreen content section post-page pt-4 px-4"><div class="columns is-flex-desktop is-justify-content-center is-flex-direction-row-reverse"><div class="column is-3 is-hidden-mobile"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Trap-%E5%A4%84%E7%90%86"><span class="toc-text">Trap 处理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BF%9D%E5%AD%98%E5%BD%93%E5%89%8D%E8%BF%90%E8%A1%8C%E7%8A%B6%E6%80%81"><span class="toc-text">保存当前运行状态</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%B7%B3%E8%BD%AC%E5%88%B0%E5%A4%84%E7%90%86%E7%A8%8B%E5%BA%8F"><span class="toc-text">跳转到处理程序</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%AD%E6%96%AD%E4%BD%BF%E8%83%BD%E3%80%81%E4%B8%AD%E6%96%AD%E6%82%AC%E7%BD%AE"><span class="toc-text">中断使能、中断悬置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%AD%E6%96%AD%E4%BF%A1%E6%81%AF"><span class="toc-text">中断信息</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#epc"><span class="toc-text">epc</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#cause"><span class="toc-text">cause</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#tval"><span class="toc-text">tval</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#mtinst%EF%BC%8Chtinst"><span class="toc-text">mtinst，htinst</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#mtinst-htinst"><span class="toc-text">mtinst, htinst</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-text">总结</span></a></li></ol></div><div class="column is-9"><header class="my-4"><a href="/tags/RISC-V"><i class="tag post-item-tag">RISC-V</i></a><a href="/tags/Hardware"><i class="tag post-item-tag">Hardware</i></a><a href="/tags/Privileged%20mode"><i class="tag post-item-tag">Privileged mode</i></a></header><h1 class="mt-0 mb-1 is-family-serif" id="postTitle">RISC-V Trap</h1><time class="has-text-grey" datetime="2023-08-31T14:26:47.147Z">2023-08-31</time><article class="mt-2 post-content"><p>RISC-V 将中断分为 <strong>软件中断</strong>、<strong>计时器中断</strong>、<strong>外部中断</strong>、<strong>中断和调试中断</strong>。</p>
+<p>RISC-V 当前并不支持硬件层面的 trap 嵌套，只能通过软件实现。</p>
+<h2 id="Trap-处理"><a href="#Trap-处理" class="headerlink" title="Trap 处理"></a>Trap 处理</h2><p>在程序执行过程中触发了特定条件，产生中断：</p>
+<ul>
+<li>保存当前运行状态</li>
+<li>依据对应特权级的 <code>ideleg</code> 和 <code>edeleg</code> CSR，确定处理该 trap 所需要的特权级，然后跳转到指定的 trap 处理函数所在的位置（由 <code>mtvec</code> 指定）</li>
+<li>设置 epc、cause、tval、tinst 等 CSR 的值</li>
+<li>处理 trap</li>
+<li>调用 <code>mret</code>、<code>sret</code> 指令返回，恢复 trap 触发之前的状态</li>
+</ul>
+<h3 id="保存当前运行状态"><a href="#保存当前运行状态" class="headerlink" title="保存当前运行状态"></a>保存当前运行状态</h3><p>用栈保存通用寄存器的值</p>
+<p>xstatus(x &#x3D; m, s, h) CSR 负责保存 trap 发生时的中断使能、特权级等信息。其中 xIE, xPIE, xPP 共同构成一个可以保存 trap 前中断使能、特权级情况的栈。</p>
+<p>栈的深度决定了 RISC-V 当前并不支持硬件层面的 trap 嵌套，但是可以通过软件方式保存现场、开启中断使能来实现。</p>
+<p>在添加了 H 扩展后，还需要 <code>hstatus</code> 来辅组保存 Guest 的信息。</p>
+<h3 id="跳转到处理程序"><a href="#跳转到处理程序" class="headerlink" title="跳转到处理程序"></a>跳转到处理程序</h3><p>主要涉及 <code>mtvec</code> CSR，具有向量化和非向量化两种模式。CSR 包括两部分：BASE 和 MODE，前者指定处理函数的基地址，后者指定跳转的模式：</p>
+<ul>
+<li>直接跳转(MODE &#x3D; 0)：直接跳转到基地址进行 trap 处理</li>
+<li>向量化跳转(MODE &#x3D; 1)：所有在 M-mode 处理的同步异常直接跳转到基地址，对于外部中断，设置 PC &#x3D; BASE + 4 * cause.</li>
+</ul>
+<h3 id="中断使能、中断悬置"><a href="#中断使能、中断悬置" class="headerlink" title="中断使能、中断悬置"></a>中断使能、中断悬置</h3><p>主要涉及 ie 和 ip 两个 CSR。在 mip 和 mie 中分别记录了 Machine 和 Supervisor 的 External、Timer、Software Interrupts 的使能以及挂起情况，处理优先级为 MEI, MSI, MTI, SEI, SSI, STI。</p>
+<p>仅在同时满足如下条件时，trap 才可以在 M-Mode 处理：</p>
+<ol>
+<li>当前特权级为 M，且 mstatus.MIE&#x3D;1，或当前特权级比 M 更低；</li>
+<li>mip, mie CSR 均被设置为 mcause 的值；</li>
+<li>若 mideleg CSR 存在则其未被修改为 mcause 的值。</li>
+</ol>
+<p>除了 M-Mode 之外，其他特权模式也都有对应的中断使能和等待 CSR，如下表所示，其结构与 mie, mip 相似，如下表所示：</p>
+<table>
+<thead>
+<tr>
+<th align="left">Privilege</th>
+<th align="left">xie</th>
+<th align="left">xip</th>
+<th align="left">hgeip</th>
+<th align="left">hgeie</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">S</td>
+<td align="left">sie</td>
+<td align="left">sip</td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">HS</td>
+<td align="left">hie</td>
+<td align="left">hip, hvip</td>
+<td align="left">hgeip</td>
+<td align="left">hgeie</td>
+</tr>
+<tr>
+<td align="left">VS</td>
+<td align="left">vsie</td>
+<td align="left">vsip</td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<h3 id="中断信息"><a href="#中断信息" class="headerlink" title="中断信息"></a>中断信息</h3><h4 id="epc"><a href="#epc" class="headerlink" title="epc"></a>epc</h4><p>mepc, sepc 分别用于在 M-Mode 和 S-Mode 下处理 trap 时记录原程序发生 trap 时的地址；vsepc 则是用于 Guest 内部的中断处理的，其功能与仅支持 S 扩展时的 sepc 几乎相同。</p>
+<h4 id="cause"><a href="#cause" class="headerlink" title="cause"></a>cause</h4><p>cause 用于记录当 trap 被交由 M-Mode 处理时该 trap 的具体类型。该 CSR 包含 Interrupt 和 Exception Code 两个部分，前者用于记录本次处理的 trap 是否为 Interrupt，是则置 1，否则置 0，后者用于记录上一次处理的 trap 的具体编码。</p>
+<p>在 trap 处理完成之后，Exception Code 的值将会被修改为本次 trap 的类型编码，这个值来自于程序本身，如果是页错误（page fault）等需要保存额外信息的异常，tval 将会被修改。此外处理中断还有优先级关系。</p>
+<h4 id="tval"><a href="#tval" class="headerlink" title="tval"></a>tval</h4><p>tval 用于辅助软件进行 trap 处理。tval 的值要么是 0 要么被写入异常相关的特定信息。如果硬件指定了所有异常都不会导致 tval 被写入非 0 值，那么该寄存器将始终是只读的 0。</p>
+<p>tval 被写入非 0 值大致包含以下情况，即异常类型为断点（breakpoint）、地址错位（address-misaligned）、访问错误（access-fault）和页错误（page-fault），此时 tval 将会被写入出错的虚拟地址，即便是对物理内存的访问出错也是如此。这样的设计对于大多数的实现来说可以大大减少数据通路的访问代价。尤其是需要进行 page-table walk 的实现。</p>
+<p>对于 access-fault 和 page-fault 异常而言，epc CSR 将会被用于保存导致异常的指令地址，而 tval 则用于保存导致上述异常的指令访问的虚拟地址。</p>
+<h4 id="mtinst，htinst"><a href="#mtinst，htinst" class="headerlink" title="mtinst，htinst"></a>mtinst，htinst</h4><h5 id="mtinst-htinst"><a href="#mtinst-htinst" class="headerlink" title="mtinst, htinst"></a>mtinst, htinst</h5><p>mtinst 会在 trap 发生后并进入 M-Mode 时，写入一个发生 trap 的指令值，或者直接置 0，该信息将用于协助软件处理 trap。htinst 则协助处理 HS-Mode 的 trap。二者都会被自动写入。它们的值规定如下：</p>
+<ul>
+<li>0；</li>
+<li>导致发生 trap 的指令的转换结果；</li>
+<li>非标准的导致 trap 的指令的指定值；</li>
+<li>特殊的伪指令。</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>添加 H 扩展之后，RISC-V ISA 中与 trap 相关的 CSR 列表如下。需要注意的是，在进行 trap 处理时，需要如上节所分析的那样，确定在什么特权级下使用哪些 CSR 进行处理。</p>
+<table>
+<thead>
+<tr>
+<th align="left">Function</th>
+<th align="left">Machine</th>
+<th align="left">Supervisor</th>
+<th align="left">Hypervisor</th>
+<th align="left">Virtual Supervisor</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Trap Vector Base Address</td>
+<td align="left">mtvec</td>
+<td align="left">stvec</td>
+<td align="left"></td>
+<td align="left">vstvec</td>
+</tr>
+<tr>
+<td align="left">Trap Delegation</td>
+<td align="left">medeleg and mideleg</td>
+<td align="left"></td>
+<td align="left">hedeleg, hideleg</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">Interrupt</td>
+<td align="left">mip, mie</td>
+<td align="left">sip, sie</td>
+<td align="left">hvip, hip, hie</td>
+<td align="left">vsip, vsie</td>
+</tr>
+<tr>
+<td align="left">Hypervisor Guest External Interrupt</td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left">hgeip, hgeie</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">Exception Program Counter</td>
+<td align="left">mepc</td>
+<td align="left">sepc</td>
+<td align="left"></td>
+<td align="left">vsepc</td>
+</tr>
+<tr>
+<td align="left">Cause</td>
+<td align="left">mcause</td>
+<td align="left">scause</td>
+<td align="left"></td>
+<td align="left">vscause</td>
+</tr>
+<tr>
+<td align="left">Trap Value</td>
+<td align="left">mtval</td>
+<td align="left">stval</td>
+<td align="left">htval</td>
+<td align="left">vstval</td>
+</tr>
+<tr>
+<td align="left">Trap Instruction</td>
+<td align="left">mtinst</td>
+<td align="left"></td>
+<td align="left">htinst</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">Status</td>
+<td align="left">mstatus, mstatush</td>
+<td align="left">sstatus</td>
+<td align="left">hstatus</td>
+<td align="left">vsstatus</td>
+</tr>
+</tbody></table>
+</article><section class="jump-container is-flex is-justify-content-space-between my-6"><!-- em is empty placeholder--><a class="button is-default" href="/2023/09/01/RISCV-Supervisor-Level%20ISA/" title="RISC-V Machine-Level ISA"><i class="iconfont icon-prev mr-2 has-text-grey"></i><span class="has-text-weight-semibold">Previous: RISC-V Machine-Level ISA</span></a><a class="button is-default" href="/2023/08/31/RISCV-Exception/" title="RISC-V Exception"><span class="has-text-weight-semibold">Next: RISC-V Exception</span><i class="iconfont icon-next ml-2 has-text-grey"></i></a></section><article class="mt-6 comment-container"><script async repo="BL-GS/BLGS.github.io" src="https://utteranc.es/client.js" issue-term="pathname" theme="preferred-color-scheme"></script></article></div></div></main></main><footer class="is-flex is-flex-direction-column is-align-items-center is-flex-shrink-0 is-family-serif"><section class="sns-container"><!-- Github--><a title="github" target="_blank" rel="noopener nofollow" href="//github.com/BL-GS"><i class="iconfont icon-github"></i></a><!-- Ins--><!-- RSS--><!-- 知乎--><a title="zhihu" target="_blank" rel="noopener nofollow" href="//zhihu.com/https://www.zhihu.com/people/blgs"><i class="iconfont icon-zhihu"></i></a><!-- 领英--><!-- 脸书--></section><p><span>Copyright ©</span><span> Xinrui Zheng 2023</span></p><div class="is-flex is-justify-content-center is-flex-wrap-wrap"><p>Powered by Hexo &verbar;&nbsp;</p><p class="is-flex is-justify-content-center"><a title="Hexo theme author" target="_blank" rel="noopener" href="//github.com/haojen">Theme by Haojen&nbsp;</a></p><div style="margin-top: 2px"><a class="github-button" title="github-button" target="_blank" rel="noopener" href="https://github.com/haojen/hexo-theme-Claudia" data-color-scheme="no-preference: light; light: light; dark: dark;" data-show-count="true"></a></div></div><div><span></span></div></footer><script async defer src="https://buttons.github.io/buttons.js"></script><script src="/js/jquery-3.6.1.min.js"></script><script src="/js/jquery-fancybox.min.js"></script><script src="/js/img_zoom.js"></script><script src="/js/post.js"></script></body></html>

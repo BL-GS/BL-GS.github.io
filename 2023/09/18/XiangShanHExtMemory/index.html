@@ -4,12 +4,18 @@ Overview未实现 H 扩展之前
 香山处理器只支持 SV39 的页表翻译，未实现 H 扩展之前，或者不在虚拟化模式下时。地址访问首先会询问 L1 TLB，取指和读写数据分别访问 ITLB 和 DTLB，均位于前端模块。在 TLB miss 之后，则需要查询 L2 TLB 甚至完整地走一遍地址翻译流程。
 由于从 L1 TLB 到 L2 TLB 的距离比较长，需要在中间加拍，其中 Repeater 起延迟转发数据作用，Filter 负责整合相同地址的访问请求。
 实现 H 扩展之后两阶段翻译(Stage-2 Translation) 增加了一层翻译。在香山的实现里，分为 S1 翻译和 S2 翻.."><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
-</head><body class="is-flex is-flex-direction-column"><header class="header-widget is-flex-shrink-0 is-hidden-mobile"><div class="container is-fullhd is-flex is-justify-content-space-between is-align-items-center is-full-height"><section class="is-hidden-mobile is-flex-shrink-0"><h2><a href="/">Xinrui Zheng's blog</a></h2></section><h3 class="is-hidden-mobile is-family-serif is-full-height is-flex is-align-items-center is-flex-shrink-0"><div class="is-full-height" id="postTopic"><p class="is-full-height is-flex-shrink-0 is-flex is-align-items-center is-justify-content-center">Memory access of XiangShan H-Extension</p><p class="is-full-height is-flex-shrink-0 is-flex is-align-items-center is-justify-content-center">Click back to the top</p></div></h3><aside class="is-flex-shrink-0"><h3 class="is-inline-block"><a href="/">Home</a></h3><h3 class="is-inline-block"><a href="/about">About</a></h3><h3 class="is-inline-block"><a href="/archives">Archives</a></h3></aside></div></header><header class="is-flex header-widget is-flex-shrink-0 is-align-items-center is-justify-content-center is-hidden-tablet"><h3 class="is-inline-block"><a href="/">Home</a></h3><h3 class="is-inline-block"><a href="/about">About</a></h3><h3 class="is-inline-block"><a href="/archives">Archives</a></h3></header><main><main class="container is-max-widescreen content section post-page pt-4 px-4"><div class="columns is-flex-desktop is-justify-content-center is-flex-direction-row-reverse"><div class="column is-3 is-hidden-mobile"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Overview"><span class="toc-text">Overview</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%AA%E5%AE%9E%E7%8E%B0-H-%E6%89%A9%E5%B1%95%E4%B9%8B%E5%89%8D"><span class="toc-text">未实现 H 扩展之前</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0-H-%E6%89%A9%E5%B1%95%E4%B9%8B%E5%90%8E"><span class="toc-text">实现 H 扩展之后</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Implementation"><span class="toc-text">Implementation</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#L2-TLB"><span class="toc-text">L2 TLB</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%8E-Page-Cache-%E5%88%B0-Page-Table-Walker"><span class="toc-text">从 Page Cache 到 Page Table Walker</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%8E-Page-Table-Walker-%E5%88%B0-Page-Cache"><span class="toc-text">从 Page Table Walker 到 Page Cache</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AE%BF%E9%97%AE%E7%89%A9%E7%90%86%E5%86%85%E5%AD%98"><span class="toc-text">访问物理内存</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BE%93%E5%87%BA%E7%BB%93%E6%9E%9C"><span class="toc-text">输出结果</span></a></li></ol></li></ol></li></ol></div><div class="column is-9"><header class="my-4"><a href="/tags/RISC-V"><i class="tag post-item-tag">RISC-V</i></a><a href="/tags/Hardware"><i class="tag post-item-tag">Hardware</i></a><a href="/tags/XiangShan"><i class="tag post-item-tag">XiangShan</i></a></header><h1 class="mt-0 mb-1 is-family-serif" id="postTitle">Memory access of XiangShan H-Extension</h1><time class="has-text-grey" datetime="2023-09-18T12:11:40.026Z">2023-09-18</time><article class="mt-2 post-content"><p>香山处理器的 H 扩展里，内存部分的改动主要是增加了对两阶段翻译的支持。其中最主要的逻辑在于 L2 TLB 的实现。</p>
+</head><body class="is-flex is-flex-direction-column"><header class="header-widget is-flex-shrink-0 is-hidden-mobile"><div class="container is-fullhd is-flex is-justify-content-space-between is-align-items-center is-full-height"><section class="is-hidden-mobile is-flex-shrink-0"><h2><a href="/">Xinrui Zheng's blog</a></h2></section><h3 class="is-hidden-mobile is-family-serif is-full-height is-flex is-align-items-center is-flex-shrink-0"><div class="is-full-height" id="postTopic"><p class="is-full-height is-flex-shrink-0 is-flex is-align-items-center is-justify-content-center">Memory access of XiangShan H-Extension</p><p class="is-full-height is-flex-shrink-0 is-flex is-align-items-center is-justify-content-center">Click back to the top</p></div></h3><aside class="is-flex-shrink-0"><h3 class="is-inline-block"><a href="/">Home</a></h3><h3 class="is-inline-block"><a href="/about">About</a></h3><h3 class="is-inline-block"><a href="/archives">Archives</a></h3></aside></div></header><header class="is-flex header-widget is-flex-shrink-0 is-align-items-center is-justify-content-center is-hidden-tablet"><h3 class="is-inline-block"><a href="/">Home</a></h3><h3 class="is-inline-block"><a href="/about">About</a></h3><h3 class="is-inline-block"><a href="/archives">Archives</a></h3></header><main><main class="container is-max-widescreen content section post-page pt-4 px-4"><div class="columns is-flex-desktop is-justify-content-center is-flex-direction-row-reverse"><div class="column is-3 is-hidden-mobile"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Overview"><span class="toc-text">Overview</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%AA%E5%AE%9E%E7%8E%B0-H-%E6%89%A9%E5%B1%95%E4%B9%8B%E5%89%8D"><span class="toc-text">未实现 H 扩展之前</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0-H-%E6%89%A9%E5%B1%95%E4%B9%8B%E5%90%8E"><span class="toc-text">实现 H 扩展之后</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Implementation"><span class="toc-text">Implementation</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Class"><span class="toc-text">Class</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#L2-TLB"><span class="toc-text">L2 TLB</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%8E-Page-Cache-%E5%88%B0-Page-Table-Walker"><span class="toc-text">从 Page Cache 到 Page Table Walker</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%8E-Page-Table-Walker-%E5%88%B0-Page-Cache"><span class="toc-text">从 Page Table Walker 到 Page Cache</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E9%98%B6%E6%AE%B5%E7%BF%BB%E8%AF%91"><span class="toc-text">第二阶段翻译</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AE%BF%E9%97%AE%E7%89%A9%E7%90%86%E5%86%85%E5%AD%98"><span class="toc-text">访问物理内存</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BE%93%E5%87%BA%E7%BB%93%E6%9E%9C"><span class="toc-text">输出结果</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B7%E4%BD%93%E7%9A%84%E7%BF%BB%E8%AF%91%E6%B5%81%E7%A8%8B"><span class="toc-text">具体的翻译流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%E7%BF%BB%E8%AF%91"><span class="toc-text">第一阶段翻译</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E9%98%B6%E6%AE%B5%E7%BF%BB%E8%AF%91-1"><span class="toc-text">第二阶段翻译</span></a></li></ol></li></ol></li></ol></div><div class="column is-9"><header class="my-4"><a href="/tags/RISC-V"><i class="tag post-item-tag">RISC-V</i></a><a href="/tags/Hardware"><i class="tag post-item-tag">Hardware</i></a><a href="/tags/XiangShan"><i class="tag post-item-tag">XiangShan</i></a></header><h1 class="mt-0 mb-1 is-family-serif" id="postTitle">Memory access of XiangShan H-Extension</h1><time class="has-text-grey" datetime="2023-09-18T12:11:40.026Z">2023-09-18</time><article class="mt-2 post-content"><p>香山处理器的 H 扩展里，内存部分的改动主要是增加了对两阶段翻译的支持。其中最主要的逻辑在于 L2 TLB 的实现。</p>
 <h1 id="Overview"><a href="#Overview" class="headerlink" title="Overview"></a>Overview</h1><h2 id="未实现-H-扩展之前"><a href="#未实现-H-扩展之前" class="headerlink" title="未实现 H 扩展之前"></a>未实现 H 扩展之前</h2><p><img src="/source/images/XiangShanTLB.png" alt="TLB of XiangShan"></p>
 <p>香山处理器只支持 SV39 的页表翻译，未实现 H 扩展之前，或者不在虚拟化模式下时。地址访问首先会询问 L1 TLB，取指和读写数据分别访问 ITLB 和 DTLB，均位于前端模块。在 TLB miss 之后，则需要查询 L2 TLB 甚至完整地走一遍地址翻译流程。</p>
 <p>由于从 L1 TLB 到 L2 TLB 的距离比较长，需要在中间加拍，其中 Repeater 起延迟转发数据作用，Filter 负责整合相同地址的访问请求。</p>
 <h2 id="实现-H-扩展之后"><a href="#实现-H-扩展之后" class="headerlink" title="实现 H 扩展之后"></a>实现 H 扩展之后</h2><p>两阶段翻译(Stage-2 Translation) 增加了一层翻译。在香山的实现里，分为 S1 翻译和 S2 翻译，其中 S1 翻译和原先的翻译流程兼容。换句话说，在没开启虚拟化的时候，S1 翻译会被正常使用，作为 PageWalker 的流程之一。</p>
 <h1 id="Implementation"><a href="#Implementation" class="headerlink" title="Implementation"></a>Implementation</h1><p>具体的实现从软件思维有些难以理解，因为代码没啥注释，组织也怪怪得。</p>
+<h2 id="Class"><a href="#Class" class="headerlink" title="Class"></a>Class</h2><ul>
+<li>HPTW: 说是完成第二阶段翻译有点夸张，更多是作为第一阶段翻译到第二阶段的中间转换接口</li>
+<li>PTW：通过状态机的方式完成 SV39 页表翻译，只能同时处理一个请求，并且最多只访问前两级页表。在 H 扩展下还添加了第二阶段翻译的支持。</li>
+<li>LLPTW：专门处理 SV39 页表翻译的最后一级翻译，不合并重复的请求，而是记录下来，共享访存结果，避免重复访问内存。在 H 扩展下还添加了第二阶段翻译的支持。</li>
+<li>PtwCache：缓存地址翻译映射，包括一二三级的地址映射；每级 walker 都需要返回结果给它供缓存。在 H 扩展下还标识了 h、g、v 标志位。</li>
+</ul>
 <h2 id="L2-TLB"><a href="#L2-TLB" class="headerlink" title="L2 TLB"></a>L2 TLB</h2><p>香山处理器的地址翻译可以说是以 Page Cache 作为中心的。Page Cache 包括了指令缓存和数据缓存，此外还记录了不同级的翻译映射关系，可以在一拍内完成翻译。外部的请求会发到 Page Cache 查询是否有缓存，内部的 Page Walker 和 Last-Level Page Walker 在每一级翻译的过程中都需要与 Page Cache 互动，将查询结果置于 Cache 中。</p>
 <h3 id="从-Page-Cache-到-Page-Table-Walker"><a href="#从-Page-Cache-到-Page-Table-Walker" class="headerlink" title="从 Page Cache 到 Page Table Walker"></a>从 Page Cache 到 Page Table Walker</h3><p>在 Page Cache miss 之后，对 TLB entry 的访问需要经过完整的多级页表翻译，这项工作由 Page Table Walker (PTW) 和 Last-Level Page Table Walker (LLPTW) 完成，对于 H 扩展的两阶段翻译还有 Hypervisor Page Table Walker (HPTW) 的参与。</p>
 <p>PTW</p>
@@ -45,7 +51,8 @@ Overview未实现 H 扩展之前
   hptw.io.sfence := sfence_dup(8)
   hptw.io.csr := csr_dup(7) 
 </code></pre>
-<h3 id="从-Page-Table-Walker-到-Page-Cache"><a href="#从-Page-Table-Walker-到-Page-Cache" class="headerlink" title="从 Page Table Walker 到 Page Cache"></a>从 Page Table Walker 到 Page Cache</h3><pre><code class="scala">  cache.io.req.valid := arb2.io.out.valid
+<h3 id="从-Page-Table-Walker-到-Page-Cache"><a href="#从-Page-Table-Walker-到-Page-Cache" class="headerlink" title="从 Page Table Walker 到 Page Cache"></a>从 Page Table Walker 到 Page Cache</h3><p>在一级翻译后，需要将对应的请求信息再次发送到 Cache 中查看是否有匹配的 entry，同时还能将 entry 记录起来。</p>
+<pre><code class="scala">  cache.io.req.valid := arb2.io.out.valid
   cache.io.req.bits.req_info.vpn := arb2.io.out.bits.vpn
   cache.io.req.bits.req_info.s2xlate := arb2.io.out.bits.s2xlate
   cache.io.req.bits.req_info.source := arb2.io.out.bits.source
@@ -83,6 +90,21 @@ Overview未实现 H 扩展之前
   arb2.io.in(InArbHPTWPort).bits.s2xlate := onlyStage2
   arb2.io.in(InArbHPTWPort).bits.source := hptw_req_arb.io.out.bits.source
 </code></pre>
+<h3 id="第二阶段翻译"><a href="#第二阶段翻译" class="headerlink" title="第二阶段翻译"></a>第二阶段翻译</h3><p>也就是将 PTW 和 LLPTW 的翻译结果交给 HPTW 做进一步翻译</p>
+<pre><code class="scala"> val InHptwArbPTWPort = 0
+  val InHptwArbLLPTWPort = 1
+  hptw_req_arb.io.in(InHptwArbPTWPort).valid := ptw.io.hptw.req.valid
+  hptw_req_arb.io.in(InHptwArbPTWPort).bits.gvpn := ptw.io.hptw.req.bits.gvpn
+  hptw_req_arb.io.in(InHptwArbPTWPort).bits.id := ptw.io.hptw.req.bits.id
+  hptw_req_arb.io.in(InHptwArbPTWPort).bits.source := ptw.io.hptw.req.bits.source
+  ptw.io.hptw.req.ready := hptw_req_arb.io.in(InHptwArbPTWPort).ready
+
+  hptw_req_arb.io.in(InHptwArbLLPTWPort).valid := llptw.io.hptw.req.valid
+  hptw_req_arb.io.in(InHptwArbLLPTWPort).bits.gvpn := llptw.io.hptw.req.bits.gvpn
+  hptw_req_arb.io.in(InHptwArbLLPTWPort).bits.id := llptw.io.hptw.req.bits.id
+  hptw_req_arb.io.in(InHptwArbLLPTWPort).bits.source := llptw.io.hptw.req.bits.source
+  llptw.io.hptw.req.ready := hptw_req_arb.io.in(InHptwArbLLPTWPort).ready
+</code></pre>
 <h3 id="访问物理内存"><a href="#访问物理内存" class="headerlink" title="访问物理内存"></a>访问物理内存</h3><p>将获取 TLB entry 的请求发给内存控制器</p>
 <pre><code class="scala">  val mem_arb = Module(new Arbiter(new L2TlbMemReqBundle(), 3))
   mem_arb.io.in(0) &lt;&gt; ptw.io.mem.req
@@ -90,7 +112,7 @@ Overview未实现 H 扩展之前
   mem_arb.io.in(2) &lt;&gt; hptw.io.mem.req
   mem_arb.io.out.ready := mem.a.ready &amp;&amp; !flush
 </code></pre>
-<p>从内存读取 TLB entry。</p>
+<p>将从内存读取 TLB entry 发送到 PTW 中做进一步处理。</p>
 <pre><code class="scala">  // mem -&gt; llptw
   llptw_mem.resp.valid := mem_resp_done &amp;&amp; mem_resp_from_llptw
   llptw_mem.resp.bits.id := DataHoldBypass(mem.d.bits.source, mem.d.valid)
@@ -118,6 +140,7 @@ Overview未实现 H 扩展之前
   llptw.io.hptw.resp.bits.h_resp := hptw_resp_arb.io.out.bits.resp
   hptw_resp_arb.io.out.ready := true.B
 </code></pre>
+<p>然后经由 <code>mergeArb</code> 和 <code>outArb</code> 整合成输出</p>
 <pre><code class="scala">  for (i &lt;- 0 until PtwWidth) &#123;
     mergeArb(i).in(outArbCachePort).valid := cache.io.resp.valid &amp;&amp; cache.io.resp.bits.hit &amp;&amp; cache.io.resp.bits.req_info.source===i.U
     mergeArb(i).in(outArbCachePort).bits.s2xlate := cache.io.resp.bits.req_info.s2xlate
@@ -145,5 +168,124 @@ Overview未实现 H 扩展之前
   io.tlb.map(_.resp).zip(outArb.map(_.out)).map&#123;
     case (resp, out) =&gt; resp &lt;&gt; out
   &#125;
+</code></pre>
+<h2 id="具体的翻译流程"><a href="#具体的翻译流程" class="headerlink" title="具体的翻译流程"></a>具体的翻译流程</h2><p>简要的说，在二阶段翻译时，虚拟地址首先传入 PTW 中翻译成 gpaddr，经由 PTW 中 hptw_req 接口传到 HPTW，HPTW 只负责第二阶段翻译。</p>
+<h3 id="第一阶段翻译"><a href="#第一阶段翻译" class="headerlink" title="第一阶段翻译"></a>第一阶段翻译</h3><p>由于硬件模块会更加抽象一些，加上代码没有注释，刚开始属实是毫无思路。。。甚至分不清 HPTW 到底负责哪一个阶段的翻译。</p>
+<p>来到 <code>PTW</code> 类内部：<br>寄存器通过判断得到 <code>vsatp</code> 的值：</p>
+<pre><code class="scala">val satp = Mux(enableS2xlate, io.csr.vsatp, io.csr.satp)
+</code></pre>
+<p>在 2 级翻译时需要访问内存：</p>
+<pre><code class="scala">val mem = io.mem
+...
+val pte = mem.resp.bits.asTypeOf(new PteBundle().cloneType)
+</code></pre>
+<p>然后拼接出对应的地址：</p>
+<pre><code class="scala">val l1addr = MakeAddr(satp.ppn, getVpnn(vpn, 2))
+val l2addr = MakeAddr(Mux(l1Hit, ppn, pte.ppn), getVpnn(vpn, 1))
+</code></pre>
+<p>根据翻译 level 选择地址：</p>
+<pre><code class="scala">val mem_addr = Mux(af_level === 0.U, l1addr, l2addr)
+</code></pre>
+<p>得到客户物理地址 GPA：</p>
+<pre><code class="scala">val gpaddr = Mux(onlyS2xlate, Cat(vpn, 0.U(offLen.W)), mem_addr)
+</code></pre>
+<p>将结果发送给 HPTW：</p>
+<pre><code class="scala">io.hptw.req.valid := !s_hptw_req || !s_last_hptw_req
+io.hptw.req.bits.id := FsmReqID.U(bMemID.W)
+io.hptw.req.bits.gvpn := get_pn(gpaddr)
+io.hptw.req.bits.source := source
+</code></pre>
+<p>在 <code>L2TLB</code> 类中，这些结果会被传递到 PageCache 里：</p>
+<pre><code class="scala">val InHptwArbPTWPort = 0
+val InHptwArbLLPTWPort = 1
+hptw_req_arb.io.in(InHptwArbPTWPort).valid := ptw.io.hptw.req.valid
+hptw_req_arb.io.in(InHptwArbPTWPort).bits.gvpn := ptw.io.hptw.req.bits.gvpn
+hptw_req_arb.io.in(InHptwArbPTWPort).bits.id := ptw.io.hptw.req.bits.id
+hptw_req_arb.io.in(InHptwArbPTWPort).bits.source := ptw.io.hptw.req.bits.source
+ptw.io.hptw.req.ready := hptw_req_arb.io.in(InHptwArbPTWPort).ready
+...
+cache.io.req.valid := arb2.io.out.valid
+cache.io.req.bits.req_info.vpn := arb2.io.out.bits.vpn
+cache.io.req.bits.req_info.s2xlate := arb2.io.out.bits.s2xlate
+cache.io.req.bits.req_info.source := arb2.io.out.bits.source
+cache.io.req.bits.isFirst := arb2.io.chosen =/= InArbMissQueuePort.U
+cache.io.req.bits.isHptw := arb2.io.chosen === InArbHPTWPort.U
+</code></pre>
+<p>之后<code>PTW</code> 会再次从 PageCache 或者 HPTW 接收到二阶段地址翻译的请求，进入第二阶段翻译</p>
+<pre><code class="scala">val HptwRespArbCachePort = 0
+val HptwRespArbHptw = 1
+hptw_resp_arb.io.in(HptwRespArbCachePort).valid := cache.io.resp.valid &amp;&amp; cache.io.resp.bits.hit &amp;&amp; cache.io.resp.bits.isHptw
+hptw_resp_arb.io.in(HptwRespArbCachePort).bits.id := cache.io.resp.bits.toHptw.id
+hptw_resp_arb.io.in(HptwRespArbCachePort).bits.resp := cache.io.resp.bits.toHptw.resp
+hptw_resp_arb.io.in(HptwRespArbHptw).valid := hptw.io.resp.valid
+hptw_resp_arb.io.in(HptwRespArbHptw).bits.id := hptw.io.resp.bits.id
+hptw_resp_arb.io.in(HptwRespArbHptw).bits.resp := hptw.io.resp.bits.resp
+...
+ptw.io.hptw.resp.valid := hptw_resp_arb.io.out.valid &amp;&amp; hptw_resp_arb.io.out.bits.id === FsmReqID.U
+ptw.io.hptw.resp.bits.h_resp := hptw_resp_arb.io.out.bits.resp
+</code></pre>
+<h3 id="第二阶段翻译-1"><a href="#第二阶段翻译-1" class="headerlink" title="第二阶段翻译"></a>第二阶段翻译</h3><p>在 PTW 里处理得到宿主物理地址 HPA：</p>
+<pre><code class="scala">val hptw_resp = io.hptw.resp.bits.h_resp
+val hpaddr = Cat(hptw_resp.entry.ppn, 0.U(offLen.W))
+</code></pre>
+<p>向内存提出读取请求，从内存取出 pte：</p>
+<pre><code class="scala">mem.req.valid := s_mem_req === false.B &amp;&amp; !mem.mask &amp;&amp; !accessFault &amp;&amp; s_pmp_check
+mem.req.bits.addr := Mux(s2xlate, hpaddr, mem_addr)
+mem.req.bits.id := FsmReqID.U(bMemID.W)
+</code></pre>
+<p>同样的从内存取出 pte：</p>
+<pre><code class="scala">val pte = mem.resp.bits.asTypeOf(new PteBundle().cloneType)
+</code></pre>
+<p>然后将其输出：</p>
+<pre><code class="scala">io.resp.valid := idle === false.B &amp;&amp; mem_addr_update &amp;&amp; !last_s2xlate &amp;&amp; ((w_mem_resp &amp;&amp; find_pte) || (s_pmp_check &amp;&amp; accessFault) || onlyS2xlate)
+io.resp.bits.source := source
+io.resp.bits.resp.apply(pageFault &amp;&amp; !accessFault &amp;&amp; !ppn_af, accessFault || ppn_af, Mux(accessFault, af_level,level), pte, vpn, satp.asid, hgatp.asid, vpn(sectortlbwidth - 1, 0), not_super = false)
+io.resp.bits.h_resp := io.hptw.resp.bits.h_resp
+io.resp.bits.s2xlate := s2xlate
+</code></pre>
+<p>之后会将其发送给 PageCache。LLPTW 的过程基本一致，不过作为最后一级翻译，其结果还可以返回到顶层模块。</p>
+<p>这里可能有的疑惑是第二阶段的翻译需要经历一个完整的三级页表翻译，但是这里好像直接一下子就从 GPA 得到了 HPA。其实从上面代码可以看到其结果来自 PageCache 或者 HPTW：PageCache 的自不必说，有一些判定位决定翻译是否 bypass 是否 valid；但是 HPTW 这里再介绍下它的流程：</p>
+<p>在得到 GPA 后：</p>
+<p>最后得到输出的 HPA，从而去访问内存。在第一级翻译可以直接使用 hgatp 寄存器的值作为物理页号 PPN。</p>
+<pre><code class="scala">val pg_base = MakeGAddr(hgatp.ppn, getGVpnn(vpn, 2.U))
+val p_pte = MakeAddr(ppn, getVpnn(vpn, 2.U - level))
+val mem_addr = Mux(level === 0.U, pg_base, p_pte)
+...
+io.mem.req.valid := !s_mem_req &amp;&amp; !io.mem.mask &amp;&amp; !accessFault &amp;&amp; s_pmp_check
+io.mem.req.bits.addr := mem_addr
+io.mem.req.bits.id := HptwReqId.U(bMemID.W)
+</code></pre>
+<p>在内存返回结果后，提取 PPN，以支持下一级翻译</p>
+<pre><code class="scala">when(io.mem.resp.fire() &amp;&amp; !w_mem_resp)&#123;
+    ppn := pte.ppn
+    w_mem_resp := true.B
+    mem_addr_update := true.B
+&#125;
+</code></pre>
+<p>当找到叶子页表时，结束翻译，使能输出</p>
+<pre><code class="scala">val find_pte = pte.isLeaf() || ppn_af || pageFault
+val resp_valid = !idle &amp;&amp; mem_addr_update &amp;&amp; ((w_mem_resp &amp;&amp; find_pte) || (s_pmp_check &amp;&amp; accessFault))
+...
+val resp = Wire(new HptwResp())
+resp.apply(pageFault &amp;&amp; !accessFault &amp;&amp; !ppn_af, accessFault || ppn_af, level, pte, vpn, hgatp.asid)
+io.resp.valid := resp_valid
+io.resp.bits.id := id
+io.resp.bits.resp := resp
+io.resp.bits.source := source
+...
+when(mem_addr_update)&#123;
+    when(!(find_pte || accessFault))&#123;
+        level := levelNext
+        s_mem_req := false.B
+        mem_addr_update := false.B
+    &#125;.elsewhen(resp_valid)&#123;
+        when(io.resp.fire())&#123;
+            idle := true.B
+            mem_addr_update := false.B
+            accessFault := false.B
+        &#125;
+        finish := true.B
+    &#125;
+&#125;
 </code></pre>
 </article><section class="jump-container is-flex is-justify-content-space-between my-6"><!-- em is empty placeholder--><em></em><a class="button is-default" href="/2023/09/07/NEMU-H-Ext/" title="NEMU-H-Ext"><span class="has-text-weight-semibold">Next: NEMU-H-Ext</span><i class="iconfont icon-next ml-2 has-text-grey"></i></a></section><article class="mt-6 comment-container"><script async repo="BL-GS/BLGS.github.io" src="https://utteranc.es/client.js" issue-term="pathname" theme="preferred-color-scheme"></script></article></div></div></main></main><footer class="is-flex is-flex-direction-column is-align-items-center is-flex-shrink-0 is-family-serif"><section class="sns-container"><!-- Github--><a title="github" target="_blank" rel="noopener nofollow" href="//github.com/BL-GS"><i class="iconfont icon-github"></i></a><!-- Ins--><!-- RSS--><!-- 知乎--><a title="zhihu" target="_blank" rel="noopener nofollow" href="//zhihu.com/https://www.zhihu.com/people/blgs"><i class="iconfont icon-zhihu"></i></a><!-- 领英--><!-- 脸书--></section><p><span>Copyright ©</span><span> Xinrui Zheng 2023</span></p><div class="is-flex is-justify-content-center is-flex-wrap-wrap"><p>Powered by Hexo &verbar;&nbsp;</p><p class="is-flex is-justify-content-center"><a title="Hexo theme author" target="_blank" rel="noopener" href="//github.com/haojen">Theme by Haojen&nbsp;</a></p><div style="margin-top: 2px"><a class="github-button" title="github-button" target="_blank" rel="noopener" href="https://github.com/haojen/hexo-theme-Claudia" data-color-scheme="no-preference: light; light: light; dark: dark;" data-show-count="true"></a></div></div><div><span></span></div></footer><script async defer src="https://buttons.github.io/buttons.js"></script><script src="/js/jquery-3.6.1.min.js"></script><script src="/js/jquery-fancybox.min.js"></script><script src="/js/img_zoom.js"></script><script src="/js/post.js"></script></body></html>

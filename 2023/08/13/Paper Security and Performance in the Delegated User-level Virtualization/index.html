@@ -1,0 +1,190 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Paper Reading: Duvisor | BLGS's Blog</title><meta name="author" content="BLGS"><meta name="copyright" content="BLGS"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="Summarization of paper: Security and Performance in the Delegated User-level Virtualization. This paper propose a novel virtualization architecture, which improves the system security and efficiency.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Paper Reading: Duvisor">
+<meta property="og:url" content="http://bl-gs.github.io/2023/08/13/Paper%20Security%20and%20Performance%20in%20the%20Delegated%20User-level%20Virtualization/index.html">
+<meta property="og:site_name" content="BLGS&#39;s Blog">
+<meta property="og:description" content="Summarization of paper: Security and Performance in the Delegated User-level Virtualization. This paper propose a novel virtualization architecture, which improves the system security and efficiency.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://bl-gs.github.io/img/avatar.png">
+<meta property="article:published_time" content="2023-08-13T14:11:07.956Z">
+<meta property="article:modified_time" content="2023-10-03T12:31:46.117Z">
+<meta property="article:author" content="BLGS">
+<meta property="article:tag" content="Virtualization">
+<meta property="article:tag" content="Paper">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://bl-gs.github.io/img/avatar.png"><link rel="shortcut icon" href="/img/favicon.ico"><link rel="canonical" href="http://bl-gs.github.io/2023/08/13/Paper%20Security%20and%20Performance%20in%20the%20Delegated%20User-level%20Virtualization/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: undefined,
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Paper Reading: Duvisor',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-10-03 20:31:46'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="BLGS's Blog" type="application/atom+xml">
+</head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/avatar.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">19</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">12</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">9</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background: linear-gradient(20deg, #0062be, #925696, #cc426e, #fb0347)"><nav id="nav"><span id="blog-info"><a href="/" title="BLGS's Blog"><img class="site-icon" src="/img/avatar.png"/><span class="site-name">BLGS's Blog</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Paper Reading: Duvisor</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2023-08-13T14:11:07.956Z" title="发表于 2023-08-13 22:11:07">2023-08-13</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2023-10-03T12:31:46.117Z" title="更新于 2023-10-03 20:31:46">2023-10-03</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Virtualization/">Virtualization</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Virtualization/Secure/">Secure</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Paper Reading: Duvisor"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="Motivation"><a href="#Motivation" class="headerlink" title="Motivation"></a>Motivation</h2><p>这篇文章的动机是将那些直接和虚拟机交互的虚拟机管理部件转移到用户态上，在运行时只在用户态下操作，从而最小化安全隐患和避免可靠性故障。<br>有若干个挑战：</p>
+<h3 id="Challenge-1-Privilege-Restriction"><a href="#Challenge-1-Privilege-Restriction" class="headerlink" title="Challenge 1: Privilege Restriction"></a>Challenge 1: Privilege Restriction</h3><p>目前的硬件虚拟化扩展都是在内核态下配置的，这就要求虚拟机在宿主机内核中能够使用这些扩展。</p>
+<h3 id="Challenge-2-Security-Risk"><a href="#Challenge-2-Security-Risk" class="headerlink" title="Challenge 2: Security Risk"></a>Challenge 2: Security Risk</h3><p>简单的将虚拟机的硬件资源转移到用户态，违反了最小特权原则（比如特权指令的使用），这样反而扩大了受攻击的可能。<br>假如 QEMU 能够修改虚拟机的二阶页表，那么他也就可以修改物理内存页，从而引入很多风险。</p>
+<h3 id="Challenge-3-Performance-Overhead"><a href="#Challenge-3-Performance-Overhead" class="headerlink" title="Challenge 3: Performance Overhead"></a>Challenge 3: Performance Overhead</h3><p>大多数虚拟机被转移到内核态工作，因此有些控制流需要时不时地使用系统调用访问内核，造成了严重的性能损耗。</p>
+<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>最近的 Intel 已经能够做到用户层中断。RISC-V 也能够做到用户态物理内存检测(RISC-V Physical Memory Protection, PMP)。所以这篇文章希望利用硬件的扩展，将虚拟化的接口安全高效地转移到用户层。</p>
+<p>这篇论文提出一个<strong>虚拟机管理程序设计原则</strong>：将 VM plane 从 hypervisor plane 中分离出来。<br>其中 VM plane 在运行时经常与虚拟机打交道，管理 VM exits，并且通过指令模拟、嵌套分页、设备虚拟化等实现多样的虚拟资源。<br>hypervisor plane 则是服务 VM plane，负责物理资源的控制和管理（内核中断、资源管理），同时处理比较严重的错误。</p>
+<p>这篇论文提出一个代理虚拟化架构(delegated virtualization architecture)。这个架构中，不再需要内核模式提供虚拟机抽象。它将 VM plane 剥离出来，成为 DuVisor。</p>
+<p>这篇论文引入了一种新的硬件扩展 Delegated Virtualization Extension(DV-Ext)。基于 DV-Ext，所有 VM 平台功能都被移动到用户态 DuVisor 进程中。<br>DuVisor 能够在用户态直接利用 DV-Ext 的寄存器和指令，不需要陷入内核态并服务运行时 VM。<br>同时，只有很小一部分 DV-driver 留在内核态，时不时唤醒。主要负责分配物理资源和处理重大问题。</p>
+<p>对于 CPU 虚拟化，DuVisor 进程为每个虚拟 CPU(vCPU) 创建一个 vthread 线程，这个线程利用 DV-Ext 处理 vCPU 在用户态的虚拟机实例。</p>
+<p>对于内存虚拟化，DuVisor 为虚拟机配置一个 stage-2 页表，在用户态用一个预先分配的物理内存处理页表错误。</p>
+<p>对于 IO 虚拟化，DuVisor 里的 para-virtualized(PV) 后端驱动直接与虚拟机前端交互，进一步使用用户层抛出的中断，绕开内核。</p>
+<h2 id="Design"><a href="#Design" class="headerlink" title="Design"></a>Design</h2><p>将 VM plane 定义为所有掌管 VM exits 和虚拟资源的功能。<br>hypervisor plane 则定义为所有服务 hypervisor 的功能，同时也负责初始化 VM plane，管理物理资源并且处理重大错误。</p>
+<h3 id="CPU-虚拟化"><a href="#CPU-虚拟化" class="headerlink" title="CPU 虚拟化"></a>CPU 虚拟化</h3><p>VM exits 可能由 <strong>异常 Exception</strong> 或者 <strong>物理中断 Physical Interrupt</strong> 造成。<br>传统的做法，所有 VM exits 发生时会陷入到内核里的 hypervisor 处理。</p>
+<p>在该论文里，所有造成 VM exit 的异常会被发送到<strong>用户层的 DuVisor</strong>处理；同时物理中断则直接陷入到<strong>宿主内核</strong>，即在 HK 模式下处理。为了避免线程调度影响寄存器数值，在处理中断之前，需要保存 DV-Ext 相关的寄存器上下文，然后在返回前将其恢复。<br>之所以不在 HU 模式下的 DuVisor 处理物理中断，是因为这种中断通常比较重要，涉及到宿主机的状态，因此不好放在 HU 模式里处理。</p>
+<p>为了使得陷入开销最小化，在 DV-driver 中，只有时钟中断周期性的给 vheader 发送中断信号。对于物理外部中断，将中断信息发给后台的驱动的 I&#x2F;O 线程，PV I&#x2F;O 设备依赖于内核里的驱动程序。</p>
+<h3 id="Memory-虚拟化"><a href="#Memory-虚拟化" class="headerlink" title="Memory 虚拟化"></a>Memory 虚拟化</h3><p>DuVisor 进程负责处理 stage-2 页表错误，同时在 HU 模式下提供内存虚拟化。<br>他要求 DV-driver 分配一块连续的地址空间，在缺页时，从这块区域分配一个也并加入页表项。<br>为了保证访问正确地址，DuVisor 在 HU 模式下管理 real stage-2 页表，同时使用类似于 RISC-V Physical Memory Protection(PMP) 这类的 Physical Memory checking(PMC) 硬件手段限制内存访问。</p>
+<p>因为 host OS 和 DuVisor 可能被映射到任意的范围，从而超过规定的范围。DV-Ext 对 PMC 机制扩张了一下，为每个 PMC range register 添加了一个 <em>Virtualization(V)</em> 位。PMC 只检查标记了 V 位的这个范围。</p>
+<p>guest virtual address(GVA) 首先通过 MMU 硬件按照 stage-1 page table 翻译成 GPA，然后根据 stage-2 page table 翻译成 HPA。这些页表由 DuVisor 管理。假如 HPA 超过了规定范围，就会引起异常，并且唤醒 DV-driver 来处理。</p>
+<h3 id="IO-虚拟化"><a href="#IO-虚拟化" class="headerlink" title="IO 虚拟化"></a>IO 虚拟化</h3><p>对于每个 PV 和模拟设备，DuVisor 在初始化的时候为其分配个 I&#x2F;O 线程。这些线程负责处理 VM 的 I&#x2F;O 请求，以及和宿主的 IO 设备交互。</p>
+<p>为了实现高效的 PV I&#x2F;O 通知，DV-Ext 支持运行中的 VM 通过用户层发出中断来 inject vEXTs。但是现存系统要求进入 host 内核才能够发出中断。</p>
+<p>但是，DV-Ext 中不需要陷入内核就能够发出中断，I&#x2F;O 线程在 HU 模式中通过将中断向量写到 posted interrupt register，从而实现注入 vEXTs 。</p>
+<p>DV-driver 在初始化的时候 (HK mode) 为每个 DuVisor 分配了一个独特的 VMID，在每次调度到这个 vheader 时写入对应核心的 h_vmid 寄存器，从而保证 vCPU 能够将中断发给具有相同 VMID 的核心。</p>
+<p>除了 vEXT，在 vCPU 之间实现通信，还需要一个虚拟 IPI(vIPI)。允许接收者和发送者在无需 VM Exit 的情况下，完成中断处理。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="http://BL-GS.github.io">BLGS</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://bl-gs.github.io/2023/08/13/Paper%20Security%20and%20Performance%20in%20the%20Delegated%20User-level%20Virtualization/">http://bl-gs.github.io/2023/08/13/Paper%20Security%20and%20Performance%20in%20the%20Delegated%20User-level%20Virtualization/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://BL-GS.github.io" target="_blank">BLGS's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Virtualization/">Virtualization</a><a class="post-meta__tags" href="/tags/Paper/">Paper</a></div><div class="post_share"><div class="social-share" data-image="/img/avatar.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2023/08/16/CPUVirtualization/" title="CPU Virtualization"><div class="cover" style="background: var(--default-bg-color)"></div><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">CPU Virtualization</div></div></a></div><div class="next-post pull-right"><a href="/2023/08/13/Virtualization/" title="Virtualization Introduction"><div class="cover" style="background: var(--default-bg-color)"></div><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Virtualization Introduction</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/2023/08/16/CPUVirtualization/" title="CPU Virtualization"><div class="cover" style="background: var(--default-bg-color)"></div><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-08-16</div><div class="title">CPU Virtualization</div></div></a></div><div><a href="/2023/08/19/RISC-V%20PMP/" title="RISC-V Privileged Architecture"><div class="cover" style="background: var(--default-bg-color)"></div><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-08-19</div><div class="title">RISC-V Privileged Architecture</div></div></a></div><div><a href="/2023/08/13/Virtualization/" title="Virtualization Introduction"><div class="cover" style="background: var(--default-bg-color)"></div><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-08-13</div><div class="title">Virtualization Introduction</div></div></a></div><div><a href="/2023/10/03/core%20slicing/" title="Paper: Core Slicing"><div class="cover" style="background: var(--default-bg-color)"></div><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-10-03</div><div class="title">Paper: Core Slicing</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/img/avatar.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">BLGS</div><div class="author-info__description"></div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">19</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">12</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">9</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/BL-GS"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/BL-GS" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="/zhengxinrui02@gmail.com" target="_blank" title="Email"><i class="fa-envelope" style="color: #4a7dbe;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">Nothing</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Motivation"><span class="toc-number">1.</span> <span class="toc-text">Motivation</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Challenge-1-Privilege-Restriction"><span class="toc-number">1.1.</span> <span class="toc-text">Challenge 1: Privilege Restriction</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Challenge-2-Security-Risk"><span class="toc-number">1.2.</span> <span class="toc-text">Challenge 2: Security Risk</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Challenge-3-Performance-Overhead"><span class="toc-number">1.3.</span> <span class="toc-text">Challenge 3: Performance Overhead</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Introduction"><span class="toc-number">2.</span> <span class="toc-text">Introduction</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Design"><span class="toc-number">3.</span> <span class="toc-text">Design</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#CPU-%E8%99%9A%E6%8B%9F%E5%8C%96"><span class="toc-number">3.1.</span> <span class="toc-text">CPU 虚拟化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Memory-%E8%99%9A%E6%8B%9F%E5%8C%96"><span class="toc-number">3.2.</span> <span class="toc-text">Memory 虚拟化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#IO-%E8%99%9A%E6%8B%9F%E5%8C%96"><span class="toc-number">3.3.</span> <span class="toc-text">IO 虚拟化</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/10/03/core%20slicing/" title="Paper: Core Slicing">Paper: Core Slicing</a><time datetime="2023-10-03T13:05:34.000Z" title="发表于 2023-10-03 21:05:34">2023-10-03</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/09/20/VerilatorUsage/" title="Usage of Verilator">Usage of Verilator</a><time datetime="2023-09-20T13:17:32.851Z" title="发表于 2023-09-20 21:17:32">2023-09-20</time></div></div><div class="aside-list-item"><div class="content"><a class="title" href="/2023/09/19/XiangSahnHExtException/" title="Exception of XiangShan H-Extension">Exception of XiangShan H-Extension</a><time datetime="2023-09-19T06:39:01.222Z" title="发表于 2023-09-19 14:39:01">2023-09-19</time></div></div><div class="aside-list-item"><div class="content"><a class="title" href="/2023/09/18/XiangShanHExtMemory/" title="Memory access of XiangShan H-Extension">Memory access of XiangShan H-Extension</a><time datetime="2023-09-18T12:11:40.026Z" title="发表于 2023-09-18 20:11:40">2023-09-18</time></div></div><div class="aside-list-item"><div class="content"><a class="title" href="/2023/09/07/NEMU-H-Ext/" title="NEMU-H-Ext">NEMU-H-Ext</a><time datetime="2023-09-07T02:13:08.470Z" title="发表于 2023-09-07 10:13:08">2023-09-07</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2023 By BLGS</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

@@ -4,11 +4,38 @@
   
     
     <entry>
+      <title>Paper: Core Slicing</title>
+      <link href="/2023/10/03/core%20slicing/"/>
+      <url>/2023/10/03/core%20slicing/</url>
+      
+        <content type="html"><![CDATA[<p>指导思想是除了硬件和一个负责分配资源的管理接口，不信任其他东西，包括客户端的 OS，云供应商的资源分配器</p><blockquote><p>这里的概念可能有些模糊，但大概意思就是：客户不需要信任云供应商能够正确分配资源，随时可以通过某些测试手段检查获得的资源是否正确）</p></blockquote><p>因为该文章声称，今天的硬件复杂度已经不太可能实现完全隔离，因此侧信道攻击难以避免。</p><h2 id="Background"><a href="#Background" class="headerlink" title="Background"></a>Background</h2><ol><li>Confidential VM 中，用户系统和恶意系统共享处理器等资源，虚拟机通过提供私有的内存和上下文切换来避免信息泄露，但是并不能够完全解决这个问题，其中<strong>侧信道攻击</strong>比较著名。</li><li>尽管今天的 Confidential VM 已经移除了宿主 hypervisor 的特权设置，但是它控制着众多客户系统的执行，从而使得侧信道攻击有机可乘。</li><li>主流的云端 IaaS (infrastructure-as-a service) 供应商以核心为粒度分配处理器、静态的分配内存资源并尽量避免内存气球等虚拟化手段、将 IO 虚拟化卸载到硬件层面。即 hypervisor 大部分功能是在完成<strong>资源划分</strong></li><li>虽然在硬件支持下，虚拟机的性能跟裸机执行接近，但是在某些场景，比如需要大量地址翻译的内存密集型工作负载下性能堪忧。</li></ol><h2 id="Main-Idea"><a href="#Main-Idea" class="headerlink" title="Main Idea"></a>Main Idea</h2><p>将 <strong>切片</strong>(slice) 定义为分配的处理器核心、内存和 IO 设备的集合。</p><ul><li>以自然边界来分割 slice</li><li>让可信计算基底(trusted computing base) 尽可能小和简单</li><li>支持内存加密和远程特征验证</li><li>让用户代码在最高权限级执行，避免信息共享</li></ul><h2 id="Design"><a href="#Design" class="headerlink" title="Design"></a>Design</h2><h3 id="Component"><a href="#Component" class="headerlink" title="Component"></a>Component</h3><ul><li><strong>slice manager</strong> <ul><li>在控制切片(slice0)上执行的</li><li>在启动时就开始执行</li><li>负责创建和删除用户切片，决定资源分配</li></ul></li><li><strong>slicevisor</strong><ul><li>privileged</li><li>为 slice manager 的组成部分</li><li>需要被用户和宿主机共同信任</li><li>负责验证用户切片</li></ul></li><li><strong>idle slice</strong><ul><li>由 slice manager 维持</li><li>持有未分配资源</li></ul></li><li><strong>lockable filter registers</strong><ul><li>限制给定核心的访问</li><li>一旦被配置锁定，为只读，除非 reset</li></ul></li><li><strong>lockable memory range registers</strong><ul><li>防止处理器访问 slice 外的内存</li><li>假设其同样能够限制虚拟 IO 设备的访问</li></ul></li><li><strong>lockable IPI destination mask register</strong><ul><li>防止处理器向 slice 外的处理器传递 IPI</li></ul></li><li><strong>core-local secure reset</strong><ul><li>重置 lockable filter registers</li><li>只有 slicevisor 能够使用</li></ul></li><li><strong>sliceloader</strong><ul><li>为 reset 后最先执行的代码 </li><li>确保 lockable filter registers 被合理配置和锁定</li><li>将控制权传递给用户代码</li></ul></li></ul><h3 id="Procedure"><a href="#Procedure" class="headerlink" title="Procedure"></a>Procedure</h3><ol><li><p>Starting a guest</p><ol><li>unprivileged slice manager 分配处理器和内存，配置虚拟 IO 设备，启动 slicevisor</li><li>slicevisor 检查分配的正确性，更新 slice table，配置设备的虚拟函数，更新 IOMMU 翻译。重置相应的处理器</li><li>处理器执行 sliceloader，执行安全启动流，读取配置，锁定 filter registers</li></ol></li><li><p>Terminating a guest</p></li><li><p>Auxiliary services</p></li></ol><h3 id="Security"><a href="#Security" class="headerlink" title="Security"></a>Security</h3><ul><li>资源静态分配，直到 slice 关闭</li><li>slice 不能访问其外部的内存</li><li>slice 不饿能中断外部的核心</li><li>slice 不能够访问外部的IO设备</li><li>只有 slice0 能够停止其他 slice 或者重置其核心</li><li>用户需要信任硬件、slicevisor 和 sliceloader</li></ul><h2 id="Problem"><a href="#Problem" class="headerlink" title="Problem"></a>Problem</h2><ol><li>静态的划分处理器资源能够消除 intra-core leakage，但是不能消除 cross-core 侧信道，比如 CrossTalk。必须通过其他的方法解决。</li><li>不能够假设内存物理地址从 0 开始，处理器不一定是连续的 ID。虽然现代操作系统能够做到这点，但是我感觉还是差点意思，不够 general。（毕竟看过很多开源代码都有这些假设。。。）</li><li></li></ol>]]></content>
+      
+      
+      <categories>
+          
+          <category> Virtualization </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Virtualization </tag>
+            
+            <tag> Bare-Metal Virtualization </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>Usage of Verilator</title>
       <link href="/2023/09/20/VerilatorUsage/"/>
       <url>/2023/09/20/VerilatorUsage/</url>
       
-        <content type="html"><![CDATA[<p>Verilator 是一款开源的 Verilog 仿真工具，可以将 Verilog 代码转化为 SystemC 或 C++ 代码，继而编译成可执行文件，从而实现 Verilog 代码的仿真。</p><h1 id="工作流程"><a href="#工作流程" class="headerlink" title="工作流程"></a>工作流程</h1><ol><li>使用 Chisel 作为 RTL 语言开发硬件</li><li>Chisel 编译生成 Verilog 文件</li><li>Verilator 将 Verilog 文件转化成 SystemC 或者 C++ 代码文件</li><li>使用 C&#x2F;C++ 编写测试的激励文件，调用指定接口与 Verilog 代码进行互动 </li><li>C&#x2F;C++ 的 Wrapper 与 Verilator 的输出一起编译生成完整的仿真程序</li></ol><p>Verilator 仿真的粒度是一个完整的时钟周期，且确定各个组合逻辑达到稳定状态，也就是忽略了组合逻辑的延迟问题，这个只有在电路综合的时候才能发现。</p><h1 id="Verilator-编译-Verilog-文件"><a href="#Verilator-编译-Verilog-文件" class="headerlink" title="Verilator 编译 Verilog 文件"></a>Verilator 编译 Verilog 文件</h1><h2 id="安装-Verilator"><a href="#安装-Verilator" class="headerlink" title="安装 Verilator"></a>安装 Verilator</h2><p>假如是使用源码编译而非使用发行版包管理器安装的，那么还需要设置环境变量</p><pre><code class="shell">export VERILATOR_ROOT=&lt;path-to-where-verilator-was-installed&gt;export PATH=$VERILATOR_ROOT/bin:$PATH</code></pre><h2 id="编译-Verilog-生成-C-代码"><a href="#编译-Verilog-生成-C-代码" class="headerlink" title="编译 Verilog 生成 C++ 代码"></a>编译 Verilog 生成 C++ 代码</h2><p>命令如下：</p><pre><code class="shell">verilator &lt;options&gt; &lt;verilog-file&gt; &lt;cpp-file&gt;</code></pre><p>其中 <code>verilog-file</code> 包括所有的 Verilog 文件，<code>cpp-file</code> 则指示生成的 Cpp 文件名。</p><p><code>option</code> 有：</p><ul><li><code>--cc</code> 获得 C++ 文件的输出</li><li><code>--exe</code> 带上 C++ 的测试激励文件，构建结果是一个可执行文件</li><li><code>--build</code> 直接编译生成目标文件</li><li><code>-j &lt;num&gt;</code> 会使用 num 个 CPU 进行编译</li><li><code>-Wall</code> Verilator 会生成尽可能多的警告信息</li><li><code>--trace</code> 导出波形文件</li><li><code>--top-module</code> 指定 Verilog 的顶层模块</li><li><code>--Mdir</code> 指定生成文件的目录</li><li><code>-CFLAGS &lt;flag&gt;</code> 指定 GCC 的编译选项</li><li><code>-I &lt;include&gt;</code> 指定包含的路径</li></ul><p>生成的 C++ 代码会在 obj-dir 文件夹下，以及对应的可执行文件。</p><h1 id="C-和-Verilog-互动"><a href="#C-和-Verilog-互动" class="headerlink" title="C++ 和 Verilog 互动"></a>C++ 和 Verilog 互动</h1><p>Verilator 提供了两种使用 C&#x2F;C++ 访问 Verilog 信号的方法：直接访问顶层输入&#x2F;输出信号和 DPI-C 机制。</p><p>需要注意的是 Verilator 4.210 版本后，其接口做了一些改动。。。。</p><h2 id="直接访问顶层输入输出信号"><a href="#直接访问顶层输入输出信号" class="headerlink" title="直接访问顶层输入输出信号"></a>直接访问顶层输入输出信号</h2><p>Verilator 将 Verilog 中的顶层模块转化为一个 C++ 的类，其输入输出信号为共有的成员变量，那么我们能够直接访问这些信号，进行写入或者读取。参考代码 <a href="https://github.com/verilator/verilator/blob/master/examples/make_tracing_c/sim_main.cpp">cpp_tracing</a></p><h3 id="Simple-Example"><a href="#Simple-Example" class="headerlink" title="Simple Example"></a>Simple Example</h3><p>其中，我们对顶层模块设置其输入，调用 <code>contextp-&gt;timeInc</code> 函数推进时间轴，然后调用顶层模块的 <code>eval</code> 成员函数模拟硬件行为；在仿真结束后调用顶层模块的 <code>final</code> 成员函数清理现场。</p><p>当有多个仿真实例时，模拟时则对每个模块依次调用 <code>eval_step</code> 成员函数，然后依次调用 <code>eval_end_step</code> 成员函数。本质上 <code>eval</code> 函数是对上述两个函数的打包。</p><p>需要注意的是，组合逻辑并不会在时序逻辑之前计算，因此，在推进时钟信号时，最好用单独的 <code>eval</code> 调用来完成所有非时钟输入。（也就是单独划出一个模拟阶段，用来完成时序逻辑之前的组合逻辑，之后再推进时钟信号）</p><h3 id="事件驱动"><a href="#事件驱动" class="headerlink" title="事件驱动"></a>事件驱动</h3><p>在添加 <code>--timing</code> 编译选项时，还有两个额外的函数用于检测是否有被悬置的事件：</p><ul><li><code>eventsPending</code> 成员函数，当有被延迟的时间时返回 true</li><li><code>nextTimeSlot</code> 成员函数，返回下一个被延迟事件的模拟时间，仅能 在<code>eventsPending</code> 返回 true 时被调用</li></ul><p>调用 <code>eventPending</code> 来检查是否能够继续仿真，然后调用 <code>nextTimeSlot</code> 来推进时间</p><p>一般情况下，调用 <code>eval</code> 或者 <code>eval_step</code> 时，Verilator 查找所有时钟信号，模拟其对应的逻辑块；但是当加上 <code>--time</code> 编译选项后，它会将延迟所有进程，等待模拟时间推进。</p><h3 id="实例复制"><a href="#实例复制" class="headerlink" title="实例复制"></a>实例复制</h3><p>通过 Verilator 的接口 <code>prepareClone</code> 和 <code>atClone</code> 函数手动重建模型，从而在另一个线程中使用。如：</p><pre><code class="c++">// static function pointers to fit pthread_atforkstatic auto prepareClone = []()&#123; topp-&gt;prepareClone(); &#125;;static auto atClone = []()&#123; topp-&gt;atClone(); &#125;;// in main function, register the handlers:pthread_atfork(prepareClone, atClone, atClone);</code></pre><h2 id="DPI-C"><a href="#DPI-C" class="headerlink" title="DPI-C"></a>DPI-C</h2><p>在 Verilog 源码中添加：</p><pre><code class="verilog">import &quot;DPI-C&quot; function int add (input int a, input int b);initial begin   $display(&quot;%x + %x = %x&quot;, 1, 2, add(1,2));endtask</code></pre><p>在在编译后，Verilator 会生成 <code>Vour__Dpi.h</code> 以及该函数的声明：</p><pre><code class="c++">extern int add(int a, int b);</code></pre><p>在 C++ 代码中对函数做实现：</p><pre><code class="c++">#include &quot;svdpi.h&quot;#include &quot;Vour__Dpi.h&quot;int add(int a, int b) &#123; return a+b; &#125;</code></pre><p>即可在 Verilog 里调用到该 C++ 函数。</p><h3 id="DPI-System-Task-Functions"><a href="#DPI-System-Task-Functions" class="headerlink" title="DPI System Task&#x2F;Functions"></a>DPI System Task&#x2F;Functions</h3><p>在 Verilog 中导出一个任务：</p><pre><code class="verilog">export &quot;DPI-C&quot; task publicSetBool;task publicSetBool;   input bit in_bool;   var_bool = in_bool;endtask</code></pre><p>之后 Verilator 会生成相应的函数声明：</p><pre><code class="c++">extern void publicSetBool(svBit in_bool);</code></pre><p>即可在 C++ 中调用该函数：</p><pre><code class="c++">#include &quot;Vour__Dpi.h&quot;publicSetBool(value);Vour::publicSetBool(value);top-&gt;publicSetBool(value);</code></pre><h3 id="Scope"><a href="#Scope" class="headerlink" title="Scope"></a>Scope</h3><p>由于 DPI Task 能够访问任意寄存器或者线网，因此他需要设置一个 scope。通过 <code>svdpi.h</code> 里的接口。在模块初始化后、任务或者函数开始前设置：</p><pre><code class="c++">#include &quot;svdpi.h&quot;...const svScope scope = svGetScopeFromName(&quot;TOP.dut&quot;);assert(scope);  // Check for nullptr if scope not foundsvSetScope(scope);</code></pre><p>这里，顶层模块名称为 <code>dut</code>，Verilator 会加一个 Top 前缀</p><h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><ol><li><a href="https://soc.ustc.edu.cn/CECS/lab2/verilator/">https://soc.ustc.edu.cn/CECS/lab2/verilator/</a></li><li><a href="https://verilator.org/guide/latest/">https://verilator.org/guide/latest/</a></li></ol>]]></content>
+        <content type="html"><![CDATA[<p>Verilator 是一款开源的 Verilog 仿真工具，可以将 Verilog 代码转化为 SystemC 或 C++ 代码，继而编译成可执行文件，从而实现 Verilog 代码的仿真。</p><h1 id="工作流程"><a href="#工作流程" class="headerlink" title="工作流程"></a>工作流程</h1><ol><li>使用 Chisel 作为 RTL 语言开发硬件</li><li>Chisel 编译生成 Verilog 文件</li><li>Verilator 将 Verilog 文件转化成 SystemC 或者 C++ 代码文件</li><li>使用 C&#x2F;C++ 编写测试的激励文件，调用指定接口与 Verilog 代码进行互动 </li><li>C&#x2F;C++ 的 Wrapper 与 Verilator 的输出一起编译生成完整的仿真程序</li></ol><p>Verilator 仿真的粒度是一个完整的时钟周期，且确定各个组合逻辑达到稳定状态，也就是忽略了组合逻辑的延迟问题，这个只有在电路综合的时候才能发现。</p><h1 id="Verilator-编译-Verilog-文件"><a href="#Verilator-编译-Verilog-文件" class="headerlink" title="Verilator 编译 Verilog 文件"></a>Verilator 编译 Verilog 文件</h1><h2 id="安装-Verilator"><a href="#安装-Verilator" class="headerlink" title="安装 Verilator"></a>安装 Verilator</h2><p>假如是使用源码编译而非使用发行版包管理器安装的，那么还需要设置环境变量</p><pre><code class="shell">export VERILATOR_ROOT=&lt;path-to-where-verilator-was-installed&gt;export PATH=$VERILATOR_ROOT/bin:$PATH</code></pre><h2 id="编译-Verilog-生成-C-代码"><a href="#编译-Verilog-生成-C-代码" class="headerlink" title="编译 Verilog 生成 C++ 代码"></a>编译 Verilog 生成 C++ 代码</h2><p>命令如下：</p><pre><code class="shell">verilator &lt;options&gt; &lt;verilog-file&gt; &lt;cpp-file&gt;</code></pre><p>其中 <code>verilog-file</code> 包括所有的 Verilog 文件，<code>cpp-file</code> 则指示生成的 Cpp 文件名。</p><p><code>option</code> 有：</p><ul><li><code>--cc</code> 获得 C++ 文件的输出</li><li><code>--exe</code> 带上 C++ 的测试激励文件，构建结果是一个可执行文件</li><li><code>--build</code> 直接编译生成目标文件</li><li><code>-j &lt;num&gt;</code> 会使用 num 个 CPU 进行编译</li><li><code>-Wall</code> Verilator 会生成尽可能多的警告信息</li><li><code>--trace</code> 导出波形文件</li><li><code>--top-module</code> 指定 Verilog 的顶层模块</li><li><code>--Mdir</code> 指定生成文件的目录</li><li><code>-CFLAGS &lt;flag&gt;</code> 指定 GCC 的编译选项</li><li><code>-I &lt;include&gt;</code> 指定包含的路径</li></ul><p>生成的 C++ 代码会在 obj-dir 文件夹下，以及对应的可执行文件。</p><h1 id="C-和-Verilog-互动"><a href="#C-和-Verilog-互动" class="headerlink" title="C++ 和 Verilog 互动"></a>C++ 和 Verilog 互动</h1><p>Verilator 提供了两种使用 C&#x2F;C++ 访问 Verilog 信号的方法：直接访问顶层输入&#x2F;输出信号和 DPI-C 机制。</p><p>需要注意的是 Verilator 4.210 版本后，其接口做了一些改动。。。。</p><h2 id="直接访问顶层输入输出信号"><a href="#直接访问顶层输入输出信号" class="headerlink" title="直接访问顶层输入输出信号"></a>直接访问顶层输入输出信号</h2><p>Verilator 将 Verilog 中的顶层模块转化为一个 C++ 的类，其输入输出信号为共有的成员变量，那么我们能够直接访问这些信号，进行写入或者读取。参考代码 <a href="https://github.com/verilator/verilator/blob/master/examples/make_tracing_c/sim_main.cpp">cpp_tracing</a></p><h3 id="Simple-Example"><a href="#Simple-Example" class="headerlink" title="Simple Example"></a>Simple Example</h3><p>其中，我们对顶层模块设置其输入，调用 <code>contextp-&gt;timeInc</code> 函数推进时间轴，然后调用顶层模块的 <code>eval</code> 成员函数模拟硬件行为；在仿真结束后调用顶层模块的 <code>final</code> 成员函数清理现场。</p><p>当有多个仿真实例时，模拟时则对每个模块依次调用 <code>eval_step</code> 成员函数，然后依次调用 <code>eval_end_step</code> 成员函数。本质上 <code>eval</code> 函数是对上述两个函数的打包。</p><p>需要注意的是，组合逻辑并不会在时序逻辑之前计算，因此，在推进时钟信号时，最好用单独的 <code>eval</code> 调用来完成所有非时钟输入。（也就是单独划出一个模拟阶段，用来完成时序逻辑之前的组合逻辑，之后再推进时钟信号）</p><h3 id="事件驱动"><a href="#事件驱动" class="headerlink" title="事件驱动"></a>事件驱动</h3><p>在添加 <code>--timing</code> 编译选项时，还有两个额外的函数用于检测是否有被悬置的事件：</p><ul><li><code>eventsPending</code> 成员函数，当有被延迟的时间时返回 true</li><li><code>nextTimeSlot</code> 成员函数，返回下一个被延迟事件的模拟时间，仅能 在<code>eventsPending</code> 返回 true 时被调用</li></ul><p>调用 <code>eventPending</code> 来检查是否能够继续仿真，然后调用 <code>nextTimeSlot</code> 来推进时间</p><p>一般情况下，调用 <code>eval</code> 或者 <code>eval_step</code> 时，Verilator 查找所有时钟信号，模拟其对应的逻辑块；但是当加上 <code>--time</code> 编译选项后，它会将延迟所有进程，等待模拟时间推进。</p><h3 id="实例复制"><a href="#实例复制" class="headerlink" title="实例复制"></a>实例复制</h3><p>通过 Verilator 的接口 <code>prepareClone</code> 和 <code>atClone</code> 函数手动重建模型，从而在另一个线程中使用。如：</p><pre><code class="c++">// static function pointers to fit pthread_atforkstatic auto prepareClone = []()&#123; topp-&gt;prepareClone(); &#125;;static auto atClone = []()&#123; topp-&gt;atClone(); &#125;;// in main function, register the handlers:pthread_atfork(prepareClone, atClone, atClone);</code></pre><h2 id="DPI-C"><a href="#DPI-C" class="headerlink" title="DPI-C"></a>DPI-C</h2><p>在 Verilog 源码中添加：</p><pre><code class="verilog">import &quot;DPI-C&quot; function int add (input int a, input int b);initial begin   $display(&quot;%x + %x = %x&quot;, 1, 2, add(1,2));endtask</code></pre><p>在在编译后，Verilator 会生成 <code>Vour__Dpi.h</code> 以及该函数的声明：</p><pre><code class="c++">extern int add(int a, int b);</code></pre><p>在 C++ 代码中对函数做实现：</p><pre><code class="c++">#include &quot;svdpi.h&quot;#include &quot;Vour__Dpi.h&quot;int add(int a, int b) &#123; return a+b; &#125;</code></pre><p>即可在 Verilog 里调用到该 C++ 函数。</p><h3 id="DPI-System-Task-Functions"><a href="#DPI-System-Task-Functions" class="headerlink" title="DPI System Task&#x2F;Functions"></a>DPI System Task&#x2F;Functions</h3><p>在 Verilog 中导出一个任务：</p><pre><code class="verilog">export &quot;DPI-C&quot; task publicSetBool;task publicSetBool;   input bit in_bool;   var_bool = in_bool;endtask</code></pre><p>之后 Verilator 会生成相应的函数声明：</p><pre><code class="c++">extern void publicSetBool(svBit in_bool);</code></pre><p>即可在 C++ 中调用该函数：</p><pre><code class="c++">#include &quot;Vour__Dpi.h&quot;publicSetBool(value);Vour::publicSetBool(value);top-&gt;publicSetBool(value);</code></pre><h3 id="Scope"><a href="#Scope" class="headerlink" title="Scope"></a>Scope</h3><p>由于 DPI Task 能够访问任意寄存器或者线网，因此他需要设置一个 scope。通过 <code>svdpi.h</code> 里的接口。在模块初始化后、任务或者函数开始前设置：</p><pre><code class="c++">#include &quot;svdpi.h&quot;...const svScope scope = svGetScopeFromName(&quot;TOP.dut&quot;);assert(scope);  // Check for nullptr if scope not foundsvSetScope(scope);</code></pre><p>这里，顶层模块名称为 <code>dut</code>，Verilator 会加一个 Top 前缀</p><h1 id="导出波形"><a href="#导出波形" class="headerlink" title="导出波形"></a>导出波形</h1><h2 id="VCD-波形"><a href="#VCD-波形" class="headerlink" title="VCD 波形"></a>VCD 波形</h2><ol><li>在 Verilator 编译时传入 <code>--trace</code> 编译选项</li><li>在 C 代码中调用 <code>Verilated::traceEverOn(true)</code>，然后使用 <code>$dumpfile</code> 和 <code>dumpvars</code> 来启用波形</li><li>或者，可以创建一个 <code>VerilatedVcdC</code> 对象，在仿真的主循环中，在 <code>eval</code> 调用之后，在每个时钟步长里，使用 <code>trace_object-&gt;dump(contextp-&gt;time())</code>，最后调用 <code>trace_object-&gt;close()</code></li></ol><pre><code class="c++">#include &quot;verilated_vcd_c.h&quot;...int main(int argc, char** argv) &#123;    const std::unique_ptr&lt;VerilatedContext&gt; contextp&#123;new VerilatedContext&#125;;    ...    Verilated::traceEverOn(true);    VerilatedVcdC* tfp = new VerilatedVcdC;    topp-&gt;trace(tfp, 99);  // Trace 99 levels of hierarchy (or see below)    // tfp-&gt;dumpvars(1, &quot;t&quot;);  // trace 1 level under &quot;t&quot;    tfp-&gt;open(&quot;obj_dir/t_trace_ena_cc/simx.vcd&quot;);    ...    while (contextp-&gt;time() &lt; sim_time &amp;&amp; !contextp-&gt;gotFinish()) &#123;        contextp-&gt;timeInc(1);        topp-&gt;eval();        tfp-&gt;dump(contextp-&gt;time());    &#125;    tfp-&gt;close();&#125;</code></pre><h2 id="FST-波形"><a href="#FST-波形" class="headerlink" title="FST 波形"></a>FST 波形</h2><p>假如只在 GTKWave 上模拟波形，还可以导出 FST 格式的波形：</p><ol><li>在 Verilator 编译时添加 <code>--trace-fst</code> 编译选项</li><li>改成使用 <code>VerilatorFstC</code> 对象进行导出波形操作</li></ol><h2 id="大波形文件"><a href="#大波形文件" class="headerlink" title="大波形文件"></a>大波形文件</h2><p>对于比较大的波形文件的操作，需要一些优化手段：</p><ol><li>在需要的时候才调用 <code>VerilatedVcdC-&gt;open</code> 或者 <code>$dumpvar</code> </li><li>在不需要追踪的模块添加 <code>/*verilator tracing_off*/</code> 标识</li><li>使用 <code>--trace-depth &lt;depth&gt;</code> 标识从顶层模块追踪的最大深度 </li><li>FST 格式的波形导出较慢，但是文件比较小</li></ol><h1 id="覆盖率分析"><a href="#覆盖率分析" class="headerlink" title="覆盖率分析"></a>覆盖率分析</h1><p>在 Verilator 编译选项里添加 <code>--coverage</code>  能够启用所有类型的覆盖率分析。在仿真最后通过 <code>Verilated::threadContextp()-&gt;coveragep()-&gt;write</code> 指定文件名，即可将覆盖率分析文件写到对应地址。</p><p>通过 <code>verilator_coverage</code> 命令能够读取覆盖率文件，展示覆盖率分析的细节。</p><h2 id="Functional-Coverage"><a href="#Functional-Coverage" class="headerlink" title="Functional Coverage"></a>Functional Coverage</h2><p>添加 <code>--coverage-user</code> 编译选项，Verilator 会将用户在 Verilog 代码里手动插入的函数覆盖率检查点(functional coverage points) 翻译成 Verilated 模型</p><p>所有的函数覆盖率检查点遵从 SystemVerilog 的 assert 格式，通过 <code>--assert</code> 单独启用，例如添加一个名为 <code>DefaultClock</code> 的覆盖率检查点：</p><pre><code class="systemverilog">DefaultClock: cover property (@(posedge clk) cyc==3);</code></pre><h2 id="Line-Coverage"><a href="#Line-Coverage" class="headerlink" title="Line　Coverage"></a>Line　Coverage</h2><p>添加 <code>--coverage-line</code> 编译选项，Verilator 会自动对代码里的每个控制流（比如代码分支），添加覆盖率计数器。在测试的最后，计数器、文件名、行号会加到覆盖率文件里。<br>此外，可以通过 <code>/*verilator coverage_block_off*/</code> 或者 <code>/*verilator coverage_block_on*/</code> 来手动控制某段代码的覆盖率分析</p><h2 id="Toggle-Coverage"><a href="#Toggle-Coverage" class="headerlink" title="Toggle Coverage"></a>Toggle Coverage</h2><p>添加 <code>--coverage-toggle</code> 编译选项，Verilator 会对模型里每个信号的每个比特插入一个计数器，在对应比特变化时计数器会递增，除了局部变量。同样可以通过 <code>/*verilator coverage_off*/</code> 或者 <code>/*verilator coverage_on*/</code> 手动控制该覆盖率的分析。</p><h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><ol><li><a href="https://soc.ustc.edu.cn/CECS/lab2/verilator/">https://soc.ustc.edu.cn/CECS/lab2/verilator/</a></li><li><a href="https://verilator.org/guide/latest/">https://verilator.org/guide/latest/</a></li></ol>]]></content>
       
       
       <categories>
@@ -100,35 +127,6 @@
       <url>/2023/09/07/NEMU-H-Ext/</url>
       
         <content type="html"><![CDATA[<h1 id="H-Extension-Difftest"><a href="#H-Extension-Difftest" class="headerlink" title="H Extension Difftest"></a>H Extension Difftest</h1><p>通过 Spike 进行 difftest 功能验证</p><pre><code class="shell">git clone https://github.com/OpenXiangShan/riscv-isa-sim.gitcd riscv-isa-simgit checkout h-extcd difftest &amp;&amp; make -j</code></pre><p>即可获得用于 NEMU Difftest 的 Spike 动态链接库</p><h1 id="KVM-NEMU-模拟"><a href="#KVM-NEMU-模拟" class="headerlink" title="KVM NEMU 模拟"></a>KVM NEMU 模拟</h1><ol><li><p>按照教程 <a href="https://github.com/kvm-riscv/howto/wiki/KVM-RISCV64-on-QEMU">KVM RISCV64 on QEMU · kvm-riscv&#x2F;howto Wiki (github.com)</a> 构建一个 QEMU 上的 KVM Linux 工作负载。QEMU 输出可以作为 Debug 参照</p></li><li><p>打开 Linux menuconfig，配置</p><pre><code>General setup -&gt;    Initramfs source file(s) 填入 busybox 的安装目录地址Kernel features -&gt;       SBI v0.1 support Device Drivers -&gt;      Character devices         Serial driver -&gt;             Early console using RISC-V SBI         RISC-V SBI console support</code></pre></li><li><p>将 <a href="https://github.com/OpenXiangShan/riscv-pk/tree/noop/dts">riscv-pk&#x2F;dts at noop · OpenXiangShan&#x2F;riscv-pk (github.com)</a> 中的 dts 下下来，主要是 system.dts 和 noop.dtsi 文件。配置 platform.dtsi 软连接到 noop.dtsi。</p></li><li><p>修改 system.dtsi 中 <code>L6: cpu</code> 的 <code>riscv,isa</code> 为 <code>rv64imafdch</code> 。主要确保 h 标志位。</p></li><li><p>修改 noop.dtsi 中的 bootargs 为：<code>console=hvc0 earlycon=sbi</code></p></li><li><p>整合设备树 <code>dtc -O dtb -o xiangshan.dtb system.dtb</code>。注意 system.dts 和 platform.dtsi 在同一目录下</p></li><li><p>编译 opensbi：</p><pre><code class="shell">make PLATFORM=generic CROSS_COMPILE=riscv64-unknown-linux-gnu- FW_FDT_PATH=&lt;dtb path&gt;/xiangshan.dtb FW_PAYLOAD_PATH=&lt;workspace path&gt;/build-riscv64/arch/riscv/boot/Image  -j</code></pre></li><li><p>得到的 <code>opensbi/build/platform/generic/fireware/fw_payload.bin</code> 即可作为可执行文件给 NEMU 执行</p></li></ol>]]></content>
-      
-      
-      <categories>
-          
-          <category> RISC-V </category>
-          
-      </categories>
-      
-      
-        <tags>
-            
-            <tag> RISC-V </tag>
-            
-            <tag> Hardware </tag>
-            
-            <tag> Privileged mode </tag>
-            
-        </tags>
-      
-    </entry>
-    
-    
-    
-    <entry>
-      <title>RISC-V Memory System</title>
-      <link href="/2023/09/01/RISCV-Memory%20System/"/>
-      <url>/2023/09/01/RISCV-Memory%20System/</url>
-      
-        <content type="html"><![CDATA[]]></content>
       
       
       <categories>
@@ -383,19 +381,6 @@
     
     
     <entry>
-      <title></title>
-      <link href="/2023/08/16/MemVirtualization/"/>
-      <url>/2023/08/16/MemVirtualization/</url>
-      
-        <content type="html"><![CDATA[]]></content>
-      
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>CPU Virtualization</title>
       <link href="/2023/08/16/CPUVirtualization/"/>
       <url>/2023/08/16/CPUVirtualization/</url>
@@ -415,6 +400,35 @@
         <tags>
             
             <tag> Virtualization </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>Paper Reading: Duvisor</title>
+      <link href="/2023/08/13/Paper%20Security%20and%20Performance%20in%20the%20Delegated%20User-level%20Virtualization/"/>
+      <url>/2023/08/13/Paper%20Security%20and%20Performance%20in%20the%20Delegated%20User-level%20Virtualization/</url>
+      
+        <content type="html"><![CDATA[<h2 id="Motivation"><a href="#Motivation" class="headerlink" title="Motivation"></a>Motivation</h2><p>这篇文章的动机是将那些直接和虚拟机交互的虚拟机管理部件转移到用户态上，在运行时只在用户态下操作，从而最小化安全隐患和避免可靠性故障。<br>有若干个挑战：</p><h3 id="Challenge-1-Privilege-Restriction"><a href="#Challenge-1-Privilege-Restriction" class="headerlink" title="Challenge 1: Privilege Restriction"></a>Challenge 1: Privilege Restriction</h3><p>目前的硬件虚拟化扩展都是在内核态下配置的，这就要求虚拟机在宿主机内核中能够使用这些扩展。</p><h3 id="Challenge-2-Security-Risk"><a href="#Challenge-2-Security-Risk" class="headerlink" title="Challenge 2: Security Risk"></a>Challenge 2: Security Risk</h3><p>简单的将虚拟机的硬件资源转移到用户态，违反了最小特权原则（比如特权指令的使用），这样反而扩大了受攻击的可能。<br>假如 QEMU 能够修改虚拟机的二阶页表，那么他也就可以修改物理内存页，从而引入很多风险。</p><h3 id="Challenge-3-Performance-Overhead"><a href="#Challenge-3-Performance-Overhead" class="headerlink" title="Challenge 3: Performance Overhead"></a>Challenge 3: Performance Overhead</h3><p>大多数虚拟机被转移到内核态工作，因此有些控制流需要时不时地使用系统调用访问内核，造成了严重的性能损耗。</p><h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>最近的 Intel 已经能够做到用户层中断。RISC-V 也能够做到用户态物理内存检测(RISC-V Physical Memory Protection, PMP)。所以这篇文章希望利用硬件的扩展，将虚拟化的接口安全高效地转移到用户层。</p><p>这篇论文提出一个<strong>虚拟机管理程序设计原则</strong>：将 VM plane 从 hypervisor plane 中分离出来。<br>其中 VM plane 在运行时经常与虚拟机打交道，管理 VM exits，并且通过指令模拟、嵌套分页、设备虚拟化等实现多样的虚拟资源。<br>hypervisor plane 则是服务 VM plane，负责物理资源的控制和管理（内核中断、资源管理），同时处理比较严重的错误。</p><p>这篇论文提出一个代理虚拟化架构(delegated virtualization architecture)。这个架构中，不再需要内核模式提供虚拟机抽象。它将 VM plane 剥离出来，成为 DuVisor。</p><p>这篇论文引入了一种新的硬件扩展 Delegated Virtualization Extension(DV-Ext)。基于 DV-Ext，所有 VM 平台功能都被移动到用户态 DuVisor 进程中。<br>DuVisor 能够在用户态直接利用 DV-Ext 的寄存器和指令，不需要陷入内核态并服务运行时 VM。<br>同时，只有很小一部分 DV-driver 留在内核态，时不时唤醒。主要负责分配物理资源和处理重大问题。</p><p>对于 CPU 虚拟化，DuVisor 进程为每个虚拟 CPU(vCPU) 创建一个 vthread 线程，这个线程利用 DV-Ext 处理 vCPU 在用户态的虚拟机实例。</p><p>对于内存虚拟化，DuVisor 为虚拟机配置一个 stage-2 页表，在用户态用一个预先分配的物理内存处理页表错误。</p><p>对于 IO 虚拟化，DuVisor 里的 para-virtualized(PV) 后端驱动直接与虚拟机前端交互，进一步使用用户层抛出的中断，绕开内核。</p><h2 id="Design"><a href="#Design" class="headerlink" title="Design"></a>Design</h2><p>将 VM plane 定义为所有掌管 VM exits 和虚拟资源的功能。<br>hypervisor plane 则定义为所有服务 hypervisor 的功能，同时也负责初始化 VM plane，管理物理资源并且处理重大错误。</p><h3 id="CPU-虚拟化"><a href="#CPU-虚拟化" class="headerlink" title="CPU 虚拟化"></a>CPU 虚拟化</h3><p>VM exits 可能由 <strong>异常 Exception</strong> 或者 <strong>物理中断 Physical Interrupt</strong> 造成。<br>传统的做法，所有 VM exits 发生时会陷入到内核里的 hypervisor 处理。</p><p>在该论文里，所有造成 VM exit 的异常会被发送到<strong>用户层的 DuVisor</strong>处理；同时物理中断则直接陷入到<strong>宿主内核</strong>，即在 HK 模式下处理。为了避免线程调度影响寄存器数值，在处理中断之前，需要保存 DV-Ext 相关的寄存器上下文，然后在返回前将其恢复。<br>之所以不在 HU 模式下的 DuVisor 处理物理中断，是因为这种中断通常比较重要，涉及到宿主机的状态，因此不好放在 HU 模式里处理。</p><p>为了使得陷入开销最小化，在 DV-driver 中，只有时钟中断周期性的给 vheader 发送中断信号。对于物理外部中断，将中断信息发给后台的驱动的 I&#x2F;O 线程，PV I&#x2F;O 设备依赖于内核里的驱动程序。</p><h3 id="Memory-虚拟化"><a href="#Memory-虚拟化" class="headerlink" title="Memory 虚拟化"></a>Memory 虚拟化</h3><p>DuVisor 进程负责处理 stage-2 页表错误，同时在 HU 模式下提供内存虚拟化。<br>他要求 DV-driver 分配一块连续的地址空间，在缺页时，从这块区域分配一个也并加入页表项。<br>为了保证访问正确地址，DuVisor 在 HU 模式下管理 real stage-2 页表，同时使用类似于 RISC-V Physical Memory Protection(PMP) 这类的 Physical Memory checking(PMC) 硬件手段限制内存访问。</p><p>因为 host OS 和 DuVisor 可能被映射到任意的范围，从而超过规定的范围。DV-Ext 对 PMC 机制扩张了一下，为每个 PMC range register 添加了一个 <em>Virtualization(V)</em> 位。PMC 只检查标记了 V 位的这个范围。</p><p>guest virtual address(GVA) 首先通过 MMU 硬件按照 stage-1 page table 翻译成 GPA，然后根据 stage-2 page table 翻译成 HPA。这些页表由 DuVisor 管理。假如 HPA 超过了规定范围，就会引起异常，并且唤醒 DV-driver 来处理。</p><h3 id="IO-虚拟化"><a href="#IO-虚拟化" class="headerlink" title="IO 虚拟化"></a>IO 虚拟化</h3><p>对于每个 PV 和模拟设备，DuVisor 在初始化的时候为其分配个 I&#x2F;O 线程。这些线程负责处理 VM 的 I&#x2F;O 请求，以及和宿主的 IO 设备交互。</p><p>为了实现高效的 PV I&#x2F;O 通知，DV-Ext 支持运行中的 VM 通过用户层发出中断来 inject vEXTs。但是现存系统要求进入 host 内核才能够发出中断。</p><p>但是，DV-Ext 中不需要陷入内核就能够发出中断，I&#x2F;O 线程在 HU 模式中通过将中断向量写到 posted interrupt register，从而实现注入 vEXTs 。</p><p>DV-driver 在初始化的时候 (HK mode) 为每个 DuVisor 分配了一个独特的 VMID，在每次调度到这个 vheader 时写入对应核心的 h_vmid 寄存器，从而保证 vCPU 能够将中断发给具有相同 VMID 的核心。</p><p>除了 vEXT，在 vCPU 之间实现通信，还需要一个虚拟 IPI(vIPI)。允许接收者和发送者在无需 VM Exit 的情况下，完成中断处理。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Virtualization </category>
+          
+          <category> Secure </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Virtualization </tag>
+            
+            <tag> Paper </tag>
             
         </tags>
       
@@ -461,13 +475,25 @@
     
     
     <entry>
-      <title></title>
-      <link href="/2023/08/09/MVCC/"/>
-      <url>/2023/08/09/MVCC/</url>
+      <title>Transaction Introduction</title>
+      <link href="/2023/08/09/Transaction/"/>
+      <url>/2023/08/09/Transaction/</url>
       
-        <content type="html"><![CDATA[]]></content>
+        <content type="html"><![CDATA[<p><strong>事务</strong> 是访问并可能更新各种数据项的一个程序执行单元。简单的说，一个事务是这么一种操作，要么能够完成，要么不引起任何影响。也就是遵从 all-or-nothing 原语。</p><h2 id="事务的属性-Property"><a href="#事务的属性-Property" class="headerlink" title="事务的属性 Property"></a>事务的属性 Property</h2><ul><li><strong>原子性 Atomicity</strong>：事务的所有操作在数据库中要么全部正确反映出来，要么完全不反映</li><li><strong>一致性 Consistency</strong>：以隔离的方式执行事务以保持事务的一致性</li><li><strong>隔离性 Isolative</strong>：尽管多个事务可能并发执行，但是需要保证，对于每个事务，其运行时不需关心其他事务的运行情况。确保隔离性是数据库系统中 <em>并发控制</em> 的责任。</li><li><strong>持久性 Durability</strong>：当一个事务完成之后，它对数据库的改变是永久的，即使出现系统故障也是如此。</li></ul><h2 id="事务的隔离等级-Isolation-Level"><a href="#事务的隔离等级-Isolation-Level" class="headerlink" title="事务的隔离等级 Isolation Level"></a>事务的隔离等级 Isolation Level</h2><p>在事务执行过程中，可能出现多种违背事务属性的情况：</p><ul><li><strong>不可重复读 Unrepeated read</strong>：一个事务中的多次重复的读操作返回的数据不同</li><li><strong>脏读 Dirty read</strong>：事务执行过程中读取到未提交事务或者中止事务的更新数据</li><li><strong>脏写 Dirty write</strong>：事务执行过程中将要写入的数据已经被未提交事务或者中止事务更新过</li><li><strong>幻读 Magic read</strong>：读到已提交插入的数据，幻读与不可重复读类似，幻读是查询到了另一个事务已提交的新插入数据，而不可重复读是查询到了另一个事务已提交更新的数据。</li></ul><p>根据 MySQL 规定的隔离等级，有如下：</p><ul><li><strong>可串行化 Serializable</strong>：通常保证可串行化的执行。但是一些数据库系统某些情况下允许非可串行化执行的方式来实现这种隔离级别</li><li><strong>可重复读 Repeatable read</strong>：只允许读取已提交的数据，并进一步要求在一个事务两次读取一个数据项期间，其他事务不得更新该数据项</li><li><strong>已提交读 Read commited</strong>：只允许读取已提交的数据，当不要求可重复读</li><li><strong>未提交读 Read uncommited</strong>：允许读取未提交数据</li></ul><p>其中，未提交读会导致脏读、不可重复读和幻读；已提交读会导致不可重复读和幻读；可重复读会导致幻读。<br>这几种隔离等级下，事务均不允许发生脏写。</p><h2 id="崩溃一致性-Crash-Consistency"><a href="#崩溃一致性-Crash-Consistency" class="headerlink" title="崩溃一致性 Crash Consistency"></a>崩溃一致性 Crash Consistency</h2><p>事务也需要满足崩溃一致性。当系统由于断电或者种种不可预知的原因崩溃时，已提交事务的影响需要保持持久化或者在重启后能够被恢复；同时，未提交事务和崩溃事务的影响在系统重启后需要被消除。</p>]]></content>
       
       
+      <categories>
+          
+          <category> Transaction </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Transaction </tag>
+            
+        </tags>
       
     </entry>
     
@@ -475,8 +501,8 @@
     
     <entry>
       <title>OCC And Its Derivation</title>
-      <link href="/2023/08/09/OCC/"/>
-      <url>/2023/08/09/OCC/</url>
+      <link href="/2023/06/20/OCC/"/>
+      <url>/2023/06/20/OCC/</url>
       
         <content type="html"><![CDATA[<p>乐观并发控制协议(Optimistic Concurrent Control, OCC) 作为一种并发控制协议，在事务内存乃至数据库系统中都十分常见。在黑书《数据库系统概论》中描述为“基于验证的并发控制协议”。</p><h2 id="朴素-OCC-Conventional-OCC"><a href="#朴素-OCC-Conventional-OCC" class="headerlink" title="朴素 OCC (Conventional OCC)"></a>朴素 OCC (Conventional OCC)</h2><p>OCC 的基本思路是乐观地执行事务，然后在事务要提交地过程中验证操作的正确性并决定成功提交还是崩溃重试。它将事务的执行过程分为三个阶段：执行阶段、验证阶段、写入阶段。</p><h3 id="执行阶段"><a href="#执行阶段" class="headerlink" title="执行阶段"></a>执行阶段</h3><p>以读写操作为例。每个事务都有一个读集合和写集合：其中每次读操作会将其记录到读集合中，每次写操作会将其记录到写集合中。<br>所有的写操作需要将数据读出到写集合中，然后在私有的副本上做修改。其之后的读写操作也会在该副本上进行。<br>这些过程<strong>理论上</strong>不需要上锁。（实际实现中可能需要上锁，为的是能够保证事务不会读到部分更新的数据，同时也能够提早发现冲突，但是也带来一定开销）</p><h3 id="验证阶段"><a href="#验证阶段" class="headerlink" title="验证阶段"></a>验证阶段</h3><p>事务需要对其操作进行验证，来确保事务执行的一致性。黑书中的介绍是对比多个并发事务的读写集合，确保没有发生 <strong>读-写冲突</strong> 或者 <strong>写-写冲突</strong>。此时，需要对事务读写集合的有效生命周期进行规定，即从其开始验证到没有比它更早开始的事务。但是从实现角度上看，这个实现起来未免引入非常大的同步开销。</p><p>一个改进是为数据项附加时间戳。有一个单调递增的全局时间戳，每次事务开始时会将其原子加一，获得当前事务的起始时间戳 <code>sts</code>；在开始验证时将其原子加一，并获得当前事务的提交时间戳 <code>cts</code>。<br>根据这个时间戳，事务读写集合的有效生命周期能够确定到当前系统中不存在事务有小于当前事务 <code>cts</code> 的 <code>sts</code>。此时无需再验证其读写集合。</p><p>但是这个同步开销依然不少。因此，人们直接将线程同步的工作交给时间戳来完成。在执行时，将对应数据项的时间戳读入读写集合。在验证的过程中，确保该时间戳仍未改变，表示数据也未被改变。此时验证通过。相反，如果时间戳改变了，则标明数据已经被修改。（原因是事务需要在写入阶段顺带用 <code>cts</code> 更新时间戳）</p><h3 id="写入阶段"><a href="#写入阶段" class="headerlink" title="写入阶段"></a>写入阶段</h3><p>在这一阶段中，事务将所有数据写入持久性存储器。同时用 <code>cts</code> 更新数据项的时间戳。事务执行完毕。</p><h3 id="其他讨论"><a href="#其他讨论" class="headerlink" title="其他讨论"></a>其他讨论</h3><p>某种意义上讲，只读事务可以不需要验证阶段和写入阶段。同时，验证阶段和写入阶段都需要保持互斥；也就是说，我在一个数据项的时间戳验证、数据更新和时间戳更新，这一堆操作需要“原子”地完成。</p><p>除此之外，还有说在读集合验证结束后就能够直接释放其对应地锁。不过我觉得，应该先对写集合元素上锁，然后对读集合上锁、验证，此时才能够释放读集合中元素的锁。这里还涉及死锁问题，大部分事务内存系统对写集合进行排序再上锁；保证读集合中不存在与写集合相同数据对象，每次验证读集合中一个对象，先上锁，验证时间戳，解锁。</p><p>当然，这只是最基本的 OCC 实现。还有很多变种。比如为了保证<strong>崩溃一致性</strong>，我们可以采用 WAL 的机制，在刚进入写入阶段、未更新原有数据时，先写入 redo 或者 undo 日志并将其持久化，然后再写入数据和更新时间戳。</p><h2 id="Silo"><a href="#Silo" class="headerlink" title="Silo"></a>Silo</h2><p>在论文 <em>Speedy Transaction in Multicore In-Memory Database</em> 中提出了一种名为 Silo 的并发控制协议（准确来说，这是一种内存数据库，不过这里只讨论它的并发控制策略）。它的目的是为了尽可能避免中心化操作的瓶颈，使用了 epoch-based<br> 的组提交策略。</p><h2 id="TicToc"><a href="#TicToc" class="headerlink" title="TicToc"></a>TicToc</h2><p>在论文 <em>TicToc: Time Traveling Optimistic Concurrency Control</em> 中提出了一种名为 TicToc 的并发控制协议。它考虑到全局分配时间戳的瓶颈，细粒度地管理各个数据项的时间戳更新。</p><h3 id="去中心化时间戳管理"><a href="#去中心化时间戳管理" class="headerlink" title="去中心化时间戳管理"></a>去中心化时间戳管理</h3><p>考虑一系列操作：</p><ul><li>A read(x)</li><li>B write(x)</li><li>B commits</li><li>A write(y)</li></ul><p>这个操作顺序是符合可串行化 Serializable 的定义的($A \rightarrow B$)，但是根据传统 OCC 的做法，A 在进入验证时因为 x 的时间戳已经被修改，从而验证失败并且崩溃。</p><p>所以 TicToc 做的就是在验证阶段生成时间戳，然后在写入阶段用该时间戳更新所有数据项。其中时间戳的生成规则如下<br>$$<br>    \exist commit_{ts}, \<br>    (\forall v \in {versions read by T}, v.wts \le commit_ts \le v.rts) \<br>    \wedge (\forall v \in {versions written by T}, v.rts &lt; commit_ts)<br>$$<br>这样所有已经提交的读事务都被排在写事务之前，所有已经提交的写事务都被排在读事务之前。</p><h3 id="事务流程"><a href="#事务流程" class="headerlink" title="事务流程"></a>事务流程</h3><p><strong>读阶段</strong>。事务将数据、wts、rts载入读&#x2F;写集合。</p><p><strong>验证阶段</strong>。开始时，需要将所有写集合元素上锁。然后计算 <code>cts</code>。计算如下：</p><pre><code>commit_ts = 0for e in WriteSet do    // e.tuple.rts means we need to read the latest timestamp of this data tuple.    commit_ts = max(commit_ts, e.tuple.rts + 1) endfor e in ReadSet do    commit_ts = max(commit_ts, e.commit_ts, e.wts)end</code></pre><p>接着需要检测是否发生冲突</p><pre><code>for r in ReadSet do     if r.rts &lt; commit_ts then        # Begin atomic section        if r.wts != r.tuple.wts or (r.tuple.rts &lt;= commit_ts and isLocked(r.tuple) and r.tuple not in WriteSet) then        abort()    else        r.tuple.rts = max(commit_ts, r.tuple.rts)    end    # End atomic sectionend</code></pre><p><strong>写入阶段</strong>。用计算得到的 <code>cts</code> 去更新所有数据项的时间戳。读集合的元素只需要更新读时间戳；写集合的元素需要同时更新两个时间戳。当然还有更新所有数据。</p><h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><p>[1] Tu, Stephen, Wenting Zheng, Eddie Kohler, Barbara Liskov, and Samuel Madden. “Speedy Transactions in Multicore In-Memory Databases.” In Proceedings of the Twenty-Fourth ACM Symposium on Operating Systems Principles, 18–32. Farminton Pennsylvania: ACM, 2013. <a href="https://doi.org/10.1145/2517349.2522713">https://doi.org/10.1145/2517349.2522713</a>.</p><p>[2] Yu, Xiangyao, Andrew Pavlo, Daniel Sanchez, and Srinivas Devadas. “TicToc: Time Traveling Optimistic Concurrency Control.” In Proceedings of the 2016 International Conference on Management of Data, 1629–42. San Francisco California USA: ACM, 2016. <a href="https://doi.org/10.1145/2882903.2882935">https://doi.org/10.1145/2882903.2882935</a>.</p>]]></content>
       
@@ -495,31 +521,6 @@
             <tag> Concurrent Control </tag>
             
             <tag> OCC </tag>
-            
-        </tags>
-      
-    </entry>
-    
-    
-    
-    <entry>
-      <title>Transaction Introduction</title>
-      <link href="/2023/08/09/Transaction/"/>
-      <url>/2023/08/09/Transaction/</url>
-      
-        <content type="html"><![CDATA[<p><strong>事务</strong> 是访问并可能更新各种数据项的一个程序执行单元。简单的说，一个事务是这么一种操作，要么能够完成，要么不引起任何影响。也就是遵从 all-or-nothing 原语。</p><h2 id="事务的属性-Property"><a href="#事务的属性-Property" class="headerlink" title="事务的属性 Property"></a>事务的属性 Property</h2><ul><li><strong>原子性 Atomicity</strong>：事务的所有操作在数据库中要么全部正确反映出来，要么完全不反映</li><li><strong>一致性 Consistency</strong>：以隔离的方式执行事务以保持事务的一致性</li><li><strong>隔离性 Isolative</strong>：尽管多个事务可能并发执行，但是需要保证，对于每个事务，其运行时不需关心其他事务的运行情况。确保隔离性是数据库系统中 <em>并发控制</em> 的责任。</li><li><strong>持久性 Durability</strong>：当一个事务完成之后，它对数据库的改变是永久的，即使出现系统故障也是如此。</li></ul><h2 id="事务的隔离等级-Isolation-Level"><a href="#事务的隔离等级-Isolation-Level" class="headerlink" title="事务的隔离等级 Isolation Level"></a>事务的隔离等级 Isolation Level</h2><p>在事务执行过程中，可能出现多种违背事务属性的情况：</p><ul><li><strong>不可重复读 Unrepeated read</strong>：一个事务中的多次重复的读操作返回的数据不同</li><li><strong>脏读 Dirty read</strong>：事务执行过程中读取到未提交事务或者中止事务的更新数据</li><li><strong>脏写 Dirty write</strong>：事务执行过程中将要写入的数据已经被未提交事务或者中止事务更新过</li><li><strong>幻读 Magic read</strong>：读到已提交插入的数据，幻读与不可重复读类似，幻读是查询到了另一个事务已提交的新插入数据，而不可重复读是查询到了另一个事务已提交更新的数据。</li></ul><p>根据 MySQL 规定的隔离等级，有如下：</p><ul><li><strong>可串行化 Serializable</strong>：通常保证可串行化的执行。但是一些数据库系统某些情况下允许非可串行化执行的方式来实现这种隔离级别</li><li><strong>可重复读 Repeatable read</strong>：只允许读取已提交的数据，并进一步要求在一个事务两次读取一个数据项期间，其他事务不得更新该数据项</li><li><strong>已提交读 Read commited</strong>：只允许读取已提交的数据，当不要求可重复读</li><li><strong>未提交读 Read uncommited</strong>：允许读取未提交数据</li></ul><p>其中，未提交读会导致脏读、不可重复读和幻读；已提交读会导致不可重复读和幻读；可重复读会导致幻读。<br>这几种隔离等级下，事务均不允许发生脏写。</p><h2 id="崩溃一致性-Crash-Consistency"><a href="#崩溃一致性-Crash-Consistency" class="headerlink" title="崩溃一致性 Crash Consistency"></a>崩溃一致性 Crash Consistency</h2><p>事务也需要满足崩溃一致性。当系统由于断电或者种种不可预知的原因崩溃时，已提交事务的影响需要保持持久化或者在重启后能够被恢复；同时，未提交事务和崩溃事务的影响在系统重启后需要被消除。</p>]]></content>
-      
-      
-      <categories>
-          
-          <category> Transaction </category>
-          
-      </categories>
-      
-      
-        <tags>
-            
-            <tag> Transaction </tag>
             
         </tags>
       

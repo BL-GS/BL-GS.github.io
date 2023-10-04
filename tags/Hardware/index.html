@@ -1,108 +1,169 @@
-<!DOCTYPE html><html class="appearance-auto" lang="en"><head><meta charset="UTF-8"><title>Xinrui Zheng's blog</title><meta name="description" content="This man is too lazy to introduce himself"><meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, initial-scale=1"><!-- Google Analytics --><!-- End Google Analytics -->
-<!-- Baidu Analytics --><!-- End Baidu Analytics --><link rel="icon" href="/images/favicon.ico"><link rel="stylesheet" href="/style/common/bulma.css"><link rel="stylesheet" href="/style/base.css"><link rel="stylesheet" href="/style/common/helper.css"><script src="/js/common.js"></script><link rel="stylesheet" href="/style/widget-post-list.css"><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
-</head><body class="is-flex is-flex-direction-column"><header class="header-widget is-flex-shrink-0 is-hidden-mobile"><div class="container is-fullhd is-flex is-justify-content-space-between is-align-items-center is-full-height"><section class="is-hidden-mobile is-flex-shrink-0"><h2><a href="/">Xinrui Zheng's blog</a></h2></section><h3 class="is-hidden-mobile is-family-serif is-full-height is-flex is-align-items-center is-flex-shrink-0"><span>Tags · Hardware</span></h3><aside class="is-flex-shrink-0"><h3 class="is-inline-block"><a href="/">Home</a></h3><h3 class="is-inline-block"><a href="/about">About</a></h3><h3 class="is-inline-block"><a href="/archives">Archives</a></h3></aside></div></header><header class="is-flex header-widget is-flex-shrink-0 is-align-items-center is-justify-content-center is-hidden-tablet"><h3 class="is-inline-block"><a href="/">Home</a></h3><h3 class="is-inline-block"><a href="/about">About</a></h3><h3 class="is-inline-block"><a href="/archives">Archives</a></h3></header><main><article class="post-container is-flex is-justify-content-center section container is-max-widescreen pt-4 px-2"><div class="columns is-variable is-1-tablet is-3-desktop-only is-2-widescreen is-full-width"><section class="column"><article class="post-item-card"><section class="content post-card-content p-4 pb-5"><header><a href="/tags/Tool"><i class="tag post-item-tag">Tool</i></a><a href="/tags/Hardware"><i class="tag post-item-tag">Hardware</i></a></header><h2 class="mt-4 mb-0 is-family-serif"><a href="/2023/09/20/VerilatorUsage/">Usage of Verilator</a></h2><time class="has-text-grey" datetime="2023-09-20T13:17:32.851Z">2023-09-20</time><p class="is-flex-grow-2 mt-2">Verilator 是一款开源的 Verilog 仿真工具，可以将 Verilog 代码转化为 SystemC 或 C++ 代码，继而编译成可执行文件，从而实现 Verilog 代码的仿真。
-工作流程
-使用 Chisel 作为 RTL 语言开发硬件
-Chisel 编译生成 Verilog 文件
-Verilator 将 Verilog 文件转化成 SystemC 或者 C++ 代码文件
-使用 C&amp;#x2F;C++ 编写测试的激励文件，调用指定接口与 Verilog 代码进行互动 
-C&amp;#x2F;C++ 的 Wrapper 与 Verilator 的输出一起编译生成完整的仿真程序
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>标签: Hardware | BLGS's Blog</title><meta name="author" content="BLGS"><meta name="copyright" content="BLGS"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta property="og:type" content="website">
+<meta property="og:title" content="BLGS&#39;s Blog">
+<meta property="og:url" content="http://bl-gs.github.io/tags/Hardware/index.html">
+<meta property="og:site_name" content="BLGS&#39;s Blog">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://bl-gs.github.io/img/avatar.png">
+<meta property="article:author" content="BLGS">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://bl-gs.github.io/img/avatar.png"><link rel="shortcut icon" href="/img/favicon.ico"><link rel="canonical" href="http://bl-gs.github.io/tags/Hardware/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: undefined,
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '标签: Hardware',
+  isPost: false,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: false,
+  postUpdate: '2023-10-04 11:45:14'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
 
-Verilator 仿真的粒度是一个完整的时钟周期，且确定各个组合逻辑达到稳定状态，也就是忽略了组合逻辑的延迟问题，这个只有在电路..</p><a class="button is-default mt-2 has-text-weight-semibold" href="/2023/09/20/VerilatorUsage/">Read more</a></section></article><article class="post-item-card"><section class="content post-card-content p-4 pb-5"><header><a href="/tags/RISC-V"><i class="tag post-item-tag">RISC-V</i></a><a href="/tags/Hardware"><i class="tag post-item-tag">Hardware</i></a><a href="/tags/XiangShan"><i class="tag post-item-tag">XiangShan</i></a></header><h2 class="mt-4 mb-0 is-family-serif"><a href="/2023/09/19/XiangSahnHExtException/">Exception of XiangShan H-Extension</a></h2><time class="has-text-grey" datetime="2023-09-19T06:39:01.222Z">2023-09-19</time><p class="is-flex-grow-2 mt-2">H 扩展的加入在异常处理方面并没有太广的影响，除了正常的对应 S-mode 和 M-mode 下异常寄存器的处理做一个简单的复制替换外，只有 PageFault 和 AccessFault 影响比较广泛。因为判断它，需要经过内存翻译以及物理地址的判断。
-某种意义上讲，它的处理也是在原有的 PageFault 和 AccessFault 的基础上做一点修改和合并。不过值得注意的是，由于 VM 上 PageFault 和 AccessFault 能够转给 VM OS 去处理，所以在发出该异常时，还需要附带客户物理地址 GPA，用来辅助异常处理。  
-TLB Access首先对 TLB 的访问类型做判断：
-val ldUpdate = !perm.a &amp;amp;&amp;amp; TlbCmd.isRead(cmd) &amp;..</p><a class="button is-default mt-2 has-text-weight-semibold" href="/2023/09/19/XiangSahnHExtException/">Read more</a></section></article><article class="post-item-card"><header class="is-relative is-flex"><div class="post-cover-backdrop is-hidden"><img src="/../images/XiangShanTLB.png" alt="loading.."></div><a class="post-cover-link has-text-centered skeleton" href="/2023/09/18/XiangShanHExtMemory/"><img class="post-cover-img js-img-fadeIn" src="/../images/XiangShanTLB.png" alt="loading.." data-backdrop="true"></a></header><section class="content post-card-content p-4 pb-5"><header><a href="/tags/RISC-V"><i class="tag post-item-tag">RISC-V</i></a><a href="/tags/Hardware"><i class="tag post-item-tag">Hardware</i></a><a href="/tags/XiangShan"><i class="tag post-item-tag">XiangShan</i></a></header><h2 class="mt-4 mb-0 is-family-serif"><a href="/2023/09/18/XiangShanHExtMemory/">Memory access of XiangShan H-Extension</a></h2><time class="has-text-grey" datetime="2023-09-18T12:11:40.026Z">2023-09-18</time><p class="is-flex-grow-2 mt-2">香山处理器的 H 扩展里，内存部分的改动主要是增加了对两阶段翻译的支持。其中最主要的逻辑在于 L2 TLB 的实现。
-Overview未实现 H 扩展之前
-香山处理器只支持 SV39 的页表翻译，未实现 H 扩展之前，或者不在虚拟化模式下时。地址访问首先会询问 L1 TLB，取指和读写数据分别访问 ITLB 和 DTLB，均位于前端模块。在 TLB miss 之后，则需要查询 L2 TLB 甚至完整地走一遍地址翻译流程。
-由于从 L1 TLB 到 L2 TLB 的距离比较长，需要在中间加拍，其中 Repeater 起延迟转发数据作用，Filter 负责整合相同地址的访问请求。
-实现 H 扩展之后两阶段翻译(Stage-2 Translation) 增加了一层翻译。在香山的实现里，分为 S1 翻译和 S2 翻..</p><a class="button is-default mt-2 has-text-weight-semibold" href="/2023/09/18/XiangShanHExtMemory/">Read more</a></section></article><article class="post-item-card"><section class="content post-card-content p-4 pb-5"><header><a href="/tags/RISC-V"><i class="tag post-item-tag">RISC-V</i></a><a href="/tags/Hardware"><i class="tag post-item-tag">Hardware</i></a><a href="/tags/Privileged%20mode"><i class="tag post-item-tag">Privileged mode</i></a></header><h2 class="mt-4 mb-0 is-family-serif"><a href="/2023/09/07/NEMU-H-Ext/">NEMU-H-Ext</a></h2><time class="has-text-grey" datetime="2023-09-07T02:13:08.470Z">2023-09-07</time><p class="is-flex-grow-2 mt-2">H Extension Difftest通过 Spike 进行 difftest 功能验证
-git clone https://github.com/OpenXiangShan/riscv-isa-sim.git
-cd riscv-isa-sim
-git checkout h-ext
-cd difftest &amp;amp;&amp;amp; make -j
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
 
-即可获得用于 NEMU Difftest 的 Spike 动态链接库
-KVM NEMU 模拟
-按照教程 KVM RISCV64 on QEMU · kvm-riscv&amp;#x2F;howto Wiki (github.com) 构建一个 QEMU 上的 KVM Linux 工作负载。QEMU 输出可以作为 Debug 参照
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
 
-打开 Linux menuconfig，..</p><a class="button is-default mt-2 has-text-weight-semibold" href="/2023/09/07/NEMU-H-Ext/">Read more</a></section></article><article class="post-item-card"><section class="content post-card-content p-4 pb-5"><header><a href="/tags/RISC-V"><i class="tag post-item-tag">RISC-V</i></a><a href="/tags/Hardware"><i class="tag post-item-tag">Hardware</i></a><a href="/tags/Privileged%20mode"><i class="tag post-item-tag">Privileged mode</i></a></header><h2 class="mt-4 mb-0 is-family-serif"><a href="/2023/09/01/RISCV-Memory%20System/">RISC-V Memory System</a></h2><time class="has-text-grey" datetime="2023-09-01T07:28:03.622Z">2023-09-01</time><p class="is-flex-grow-2 mt-2"></p><a class="button is-default mt-2 has-text-weight-semibold" href="/2023/09/01/RISCV-Memory%20System/">Read more</a></section></article><article class="post-item-card"><section class="content post-card-content p-4 pb-5"><header><a href="/tags/RISC-V"><i class="tag post-item-tag">RISC-V</i></a><a href="/tags/Hardware"><i class="tag post-item-tag">Hardware</i></a><a href="/tags/Privileged%20mode"><i class="tag post-item-tag">Privileged mode</i></a></header><h2 class="mt-4 mb-0 is-family-serif"><a href="/2023/09/01/RISCV-Supervisor-Level%20ISA/">RISC-V Machine-Level ISA</a></h2><time class="has-text-grey" datetime="2023-09-01T02:11:18.600Z">2023-09-01</time><p class="is-flex-grow-2 mt-2">Supervisor RegistersSupervisor Status Register (sstatus)sstatus 是一个 SXLEN 位的可读写寄存器，是 mstatus 寄存器的子集
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
 
-
-
-Field
-Function
-
-
-
-SPP
-指示进入 S-mode 之前的特权级，0 为 U-mode，否则为 1
-
-
-SIE
-使能 S-mode 下的所有中断；在 U-mode 下无视该值，默认开启
-
-
-SPIE
-指示陷入 S-mode 之前，supervisor 的中断是否被开启
-
-
-UXL
-控制 U-mode 下的 XLEN，即 UXLEN
-
-
-MXR
-访问虚拟内存时，读取的特权级要求，0 时只有 readable 的 page 能成功，1 时 executable 的 page 也能读取
-
-
-SU..</p><a class="button is-default mt-2 has-text-weight-semibold" href="/2023/09/01/RISCV-Supervisor-Level%20ISA/">Read more</a></section></article><article class="post-item-card"><section class="content post-card-content p-4 pb-5"><header><a href="/tags/RISC-V"><i class="tag post-item-tag">RISC-V</i></a><a href="/tags/Hardware"><i class="tag post-item-tag">Hardware</i></a><a href="/tags/Privileged%20mode"><i class="tag post-item-tag">Privileged mode</i></a></header><h2 class="mt-4 mb-0 is-family-serif"><a href="/2023/08/31/RISCV-Trap/">RISC-V Trap</a></h2><time class="has-text-grey" datetime="2023-08-31T14:26:47.147Z">2023-08-31</time><p class="is-flex-grow-2 mt-2">RISC-V 将中断分为 软件中断、计时器中断、外部中断、中断和调试中断。
-RISC-V 当前并不支持硬件层面的 trap 嵌套，只能通过软件实现。
-Trap 处理在程序执行过程中触发了特定条件，产生中断：
-
-保存当前运行状态
-依据对应特权级的 ideleg 和 edeleg CSR，确定处理该 trap 所需要的特权级，然后跳转到指定的 trap 处理函数所在的位置（由 mtvec 指定）
-设置 epc、cause、tval、tinst 等 CSR 的值
-处理 trap
-调用 mret、sret 指令返回，恢复 trap 触发之前的状态
-
-保存当前运行状态用栈保存通用寄存器的值
-xstatus(x &amp;#x3D; m, s, h) CSR 负责保存 trap 发生时的中断使能、特权级等信息。其中 xIE, ..</p><a class="button is-default mt-2 has-text-weight-semibold" href="/2023/08/31/RISCV-Trap/">Read more</a></section></article><article class="post-item-card"><section class="content post-card-content p-4 pb-5"><header><a href="/tags/RISC-V"><i class="tag post-item-tag">RISC-V</i></a><a href="/tags/Hardware"><i class="tag post-item-tag">Hardware</i></a><a href="/tags/Privileged%20mode"><i class="tag post-item-tag">Privileged mode</i></a></header><h2 class="mt-4 mb-0 is-family-serif"><a href="/2023/08/31/RISCV-Exception/">RISC-V Exception</a></h2><time class="has-text-grey" datetime="2023-08-31T12:09:43.432Z">2023-08-31</time><p class="is-flex-grow-2 mt-2">异常的定义很多种，但是大都分为：
-
-同步异常：执行某个指令序列，在某条指令处能够确切引起异常
-异步异常：与执行的指令序列无关，而与外部的中断事件有关
-
-也有将同步异常称为异常，将异步异常称为中断的。
-RISC-V 将中断分为 软件中断、计时器中断、外部中断、中断和调试中断
-非虚拟化场景在任何时候，一个 RISC-V 的 hart 都会运行在一个权限模式当中。在不开启 H 扩展的条件下，共有三种特权模式：User (U-mode)、Supervisor (S-mode)、Machine (M-mode)
-CSRs与异常相关的空置状态寄存器共有 8 个：
-
-mcause (Machine Exception Cause) 记录发生异常的原因
-mtvec (Machine Trap Vector Base-Add..</p><a class="button is-default mt-2 has-text-weight-semibold" href="/2023/08/31/RISCV-Exception/">Read more</a></section></article><article class="post-item-card"><section class="content post-card-content p-4 pb-5"><header><a href="/tags/RISC-V"><i class="tag post-item-tag">RISC-V</i></a><a href="/tags/Hardware"><i class="tag post-item-tag">Hardware</i></a><a href="/tags/Privileged%20mode"><i class="tag post-item-tag">Privileged mode</i></a></header><h2 class="mt-4 mb-0 is-family-serif"><a href="/2023/08/31/RISCV-H%20Extension/">RISC-V H Extension</a></h2><time class="has-text-grey" datetime="2023-08-31T12:09:00.703Z">2023-08-31</time><p class="is-flex-grow-2 mt-2">H 扩展架构在添加 H 扩展后。系统包含了硬件、Supervisor、OS、APP 四层。硬件与 supervisor 之间的通信与 S 级架构下硬件与 OS 的通信类似，可以使用相同的 SBI；但 supervisor 与 Guest 之间的通信则需要额外的实现。值得一提的是，hypervisor 除了可以是单独实现的管理器之外，还可以是具备管理多个 Guest 的能力的 OS。
-也就是一个完整的系统可以有 M-mode、HS-mode、VS-mode、VU-mode，也可以只是 M-mode、HS-mode、U-mode 。
-在寄存器 misa 寄存器设置 H 扩展支持位
-Additional Privilege Mode
-
-
-Virtualization Mode
-Abbreviation
-Name
-..</p><a class="button is-default mt-2 has-text-weight-semibold" href="/2023/08/31/RISCV-H%20Extension/">Read more</a></section></article><article class="post-item-card"><header class="is-relative is-flex"><div class="post-cover-backdrop is-hidden"><img src="/../images/Machine%20ISA%20Register%20misa.png" alt="loading.."></div><a class="post-cover-link has-text-centered skeleton" href="/2023/08/25/RISCV-Machine-Level%20ISA/"><img class="post-cover-img js-img-fadeIn" src="/../images/Machine%20ISA%20Register%20misa.png" alt="loading.." data-backdrop="true"></a></header><section class="content post-card-content p-4 pb-5"><header><a href="/tags/RISC-V"><i class="tag post-item-tag">RISC-V</i></a><a href="/tags/Hardware"><i class="tag post-item-tag">Hardware</i></a><a href="/tags/Privileged%20mode"><i class="tag post-item-tag">Privileged mode</i></a></header><h2 class="mt-4 mb-0 is-family-serif"><a href="/2023/08/25/RISCV-Machine-Level%20ISA/">RISC-V Machine-Level ISA</a></h2><time class="has-text-grey" datetime="2023-08-25T07:33:41.958Z">2023-08-25</time><p class="is-flex-grow-2 mt-2">机器模式 Machine Level 在 RISC-V 系统中是最高特权级。M-mode 用来提供低等级的，对硬件的操作。系统的最初状态就是机器模式。
-Machine-Level CSRsMachine ISA Register misamisa CSR 是一个 WARL 可读写寄存器，指示被支持的 ISA。这个寄存器一定得是可读的，但是可以通过返回 0 值表示 misa 寄存器仍未被实现。
-
-
-MXL 指示 native base integer ISA 的宽度 MXLEN (0-32，1-64，3-128)。可以是可写的从而支持多种 base ISA。在 misa 为 0 时，MXLEN 是一个固定值。
-Extension 域指示标准扩展的实现，每个 bit 对应一个扩展字母。
-
-其他细节详见说明书。
-..</p><a class="button is-default mt-2 has-text-weight-semibold" href="/2023/08/25/RISCV-Machine-Level%20ISA/">Read more</a></section></article><section class="paginator is-flex is-justify-content-flex-end is-flex-wrap-wrap mt-5"><span class="page-number current">1</span><a class="page-number" href="/tags/Hardware/page/2/">2</a><a class="extend next" rel="next" href="/tags/Hardware/page/2/"><i class="iconfont icon-next has-text-grey"></i></a></section></section><aside class="column is-hidden-mobile is-4-tablet is-3-widescreen"><div style="position: sticky; top: 50px;"><main class="aside-card-container tag-widget is-in-tag-page"><h3>Tags</h3><section><a href="/tags/Virtualization"><span class="tag post-item-tag" style="margin-bottom: 5px;">Virtualization</span></a><a href="/tags/Tool"><span class="tag post-item-tag" style="margin-bottom: 5px;">Tool</span></a><a href="/tags/Language"><span class="tag post-item-tag" style="margin-bottom: 5px;">Language</span></a><a href="/tags/RISC-V"><span class="tag post-item-tag" style="margin-bottom: 5px;">RISC-V</span></a><a href="/tags/Hardware"><span class="tag post-item-tag" style="margin-bottom: 5px;">Hardware</span></a><a href="/tags/Privileged%20mode"><span class="tag post-item-tag" style="margin-bottom: 5px;">Privileged mode</span></a><a href="/tags/Transaction"><span class="tag post-item-tag" style="margin-bottom: 5px;">Transaction</span></a><a href="/tags/Concurrent%20Control"><span class="tag post-item-tag" style="margin-bottom: 5px;">Concurrent Control</span></a><a href="/tags/OCC"><span class="tag post-item-tag" style="margin-bottom: 5px;">OCC</span></a><a href="/tags/XiangShan"><span class="tag post-item-tag" style="margin-bottom: 5px;">XiangShan</span></a></section></main></div></aside></div></article><script>$claudia.fadeInImage(null, $claudia.blurBackdropImg)
-
-window.addEventListener('resize', $claudia.throttle(function () {
-    var images = document.querySelectorAll('.js-img-fadeIn')
-
-    images.forEach($claudia.blurBackdropImg)
-}, 150))</script></main><footer class="is-flex is-flex-direction-column is-align-items-center is-flex-shrink-0 is-family-serif"><section class="sns-container"><!-- Github--><a title="github" target="_blank" rel="noopener nofollow" href="//github.com/BL-GS"><i class="iconfont icon-github"></i></a><!-- Ins--><!-- RSS--><!-- 知乎--><a title="zhihu" target="_blank" rel="noopener nofollow" href="//zhihu.com/https://www.zhihu.com/people/blgs"><i class="iconfont icon-zhihu"></i></a><!-- 领英--><!-- 脸书--></section><p><span>Copyright ©</span><span> Xinrui Zheng 2023</span></p><div class="is-flex is-justify-content-center is-flex-wrap-wrap"><p>Powered by Hexo &verbar;&nbsp;</p><p class="is-flex is-justify-content-center"><a title="Hexo theme author" target="_blank" rel="noopener" href="//github.com/haojen">Theme by Haojen&nbsp;</a></p><div style="margin-top: 2px"><a class="github-button" title="github-button" target="_blank" rel="noopener" href="https://github.com/haojen/hexo-theme-Claudia" data-color-scheme="no-preference: light; light: light; dark: dark;" data-show-count="true"></a></div></div><div><span></span></div></footer><script async defer src="https://buttons.github.io/buttons.js"></script><script>$claudia.fadeInImage(null, $claudia.blurBackdropImg)
-
-window.addEventListener('resize', $claudia.throttle(function () {
-    var images = document.querySelectorAll('.js-img-fadeIn')
-
-    images.forEach($claudia.blurBackdropImg)
-}, 150))</script></body></html>
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="BLGS's Blog" type="application/atom+xml">
+</head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/avatar.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">19</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">12</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">9</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="page" id="body-wrap"><header class="not-home-page" id="page-header" style="background: linear-gradient(20deg, #0062be, #925696, #cc426e, #fb0347)"><nav id="nav"><span id="blog-info"><a href="/" title="BLGS's Blog"><img class="site-icon" src="/img/avatar.png"/><span class="site-name">BLGS's Blog</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="page-site-info"><h1 id="site-title">Hardware</h1></div></header><main class="layout" id="content-inner"><div id="tag"><div class="article-sort-title">标签 - Hardware</div><div class="article-sort"><div class="article-sort-item year">2023</div><div class="article-sort-item no-article-cover"><div class="article-sort-item-info"><div class="article-sort-item-time"><i class="far fa-calendar-alt"></i><time class="post-meta-date-created" datetime="2023-09-20T13:17:32.851Z" title="发表于 2023-09-20 21:17:32">2023-09-20</time></div><a class="article-sort-item-title" href="/2023/09/20/VerilatorUsage/" title="Usage of Verilator">Usage of Verilator</a></div></div><div class="article-sort-item"><div class="article-sort-item-info"><div class="article-sort-item-time"><i class="far fa-calendar-alt"></i><time class="post-meta-date-created" datetime="2023-09-19T06:39:01.222Z" title="发表于 2023-09-19 14:39:01">2023-09-19</time></div><a class="article-sort-item-title" href="/2023/09/19/XiangSahnHExtException/" title="Exception of XiangShan H-Extension">Exception of XiangShan H-Extension</a></div></div><div class="article-sort-item"><div class="article-sort-item-info"><div class="article-sort-item-time"><i class="far fa-calendar-alt"></i><time class="post-meta-date-created" datetime="2023-09-18T12:11:40.026Z" title="发表于 2023-09-18 20:11:40">2023-09-18</time></div><a class="article-sort-item-title" href="/2023/09/18/XiangShanHExtMemory/" title="Memory access of XiangShan H-Extension">Memory access of XiangShan H-Extension</a></div></div><div class="article-sort-item"><div class="article-sort-item-info"><div class="article-sort-item-time"><i class="far fa-calendar-alt"></i><time class="post-meta-date-created" datetime="2023-09-07T02:13:08.470Z" title="发表于 2023-09-07 10:13:08">2023-09-07</time></div><a class="article-sort-item-title" href="/2023/09/07/NEMU-H-Ext/" title="NEMU-H-Ext">NEMU-H-Ext</a></div></div><div class="article-sort-item"><div class="article-sort-item-info"><div class="article-sort-item-time"><i class="far fa-calendar-alt"></i><time class="post-meta-date-created" datetime="2023-09-01T02:11:18.600Z" title="发表于 2023-09-01 10:11:18">2023-09-01</time></div><a class="article-sort-item-title" href="/2023/09/01/RISCV-Supervisor-Level%20ISA/" title="RISC-V Machine-Level ISA">RISC-V Machine-Level ISA</a></div></div><div class="article-sort-item"><div class="article-sort-item-info"><div class="article-sort-item-time"><i class="far fa-calendar-alt"></i><time class="post-meta-date-created" datetime="2023-08-31T14:26:47.147Z" title="发表于 2023-08-31 22:26:47">2023-08-31</time></div><a class="article-sort-item-title" href="/2023/08/31/RISCV-Trap/" title="RISC-V Trap">RISC-V Trap</a></div></div><div class="article-sort-item"><div class="article-sort-item-info"><div class="article-sort-item-time"><i class="far fa-calendar-alt"></i><time class="post-meta-date-created" datetime="2023-08-31T12:09:43.432Z" title="发表于 2023-08-31 20:09:43">2023-08-31</time></div><a class="article-sort-item-title" href="/2023/08/31/RISCV-Exception/" title="RISC-V Exception">RISC-V Exception</a></div></div><div class="article-sort-item no-article-cover"><div class="article-sort-item-info"><div class="article-sort-item-time"><i class="far fa-calendar-alt"></i><time class="post-meta-date-created" datetime="2023-08-31T12:09:00.703Z" title="发表于 2023-08-31 20:09:00">2023-08-31</time></div><a class="article-sort-item-title" href="/2023/08/31/RISCV-H%20Extension/" title="RISC-V H Extension">RISC-V H Extension</a></div></div><div class="article-sort-item"><div class="article-sort-item-info"><div class="article-sort-item-time"><i class="far fa-calendar-alt"></i><time class="post-meta-date-created" datetime="2023-08-25T07:33:41.958Z" title="发表于 2023-08-25 15:33:41">2023-08-25</time></div><a class="article-sort-item-title" href="/2023/08/25/RISCV-Machine-Level%20ISA/" title="RISC-V Machine-Level ISA">RISC-V Machine-Level ISA</a></div></div><div class="article-sort-item"><div class="article-sort-item-info"><div class="article-sort-item-time"><i class="far fa-calendar-alt"></i><time class="post-meta-date-created" datetime="2023-08-25T06:30:06.391Z" title="发表于 2023-08-25 14:30:06">2023-08-25</time></div><a class="article-sort-item-title" href="/2023/08/25/RISCV-CSR/" title="RISC-V CSR Introduction">RISC-V CSR Introduction</a></div></div></div><nav id="pagination"><div class="pagination"><span class="page-number current">1</span><a class="page-number" href="/tags/Hardware/page/2/">2</a><a class="extend next" rel="next" href="/tags/Hardware/page/2/"><i class="fas fa-chevron-right fa-fw"></i></a></div></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/img/avatar.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">BLGS</div><div class="author-info__description"></div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">19</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">12</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">9</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/BL-GS"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/BL-GS" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="/zhengxinrui02@gmail.com" target="_blank" title="Email"><i class="fa-envelope" style="color: #4a7dbe;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">Nothing</div></div><div class="sticky_layout"><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/10/03/core%20slicing/" title="Paper: Core Slicing">Paper: Core Slicing</a><time datetime="2023-10-03T13:05:34.000Z" title="发表于 2023-10-03 21:05:34">2023-10-03</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/09/20/VerilatorUsage/" title="Usage of Verilator">Usage of Verilator</a><time datetime="2023-09-20T13:17:32.851Z" title="发表于 2023-09-20 21:17:32">2023-09-20</time></div></div><div class="aside-list-item"><div class="content"><a class="title" href="/2023/09/19/XiangSahnHExtException/" title="Exception of XiangShan H-Extension">Exception of XiangShan H-Extension</a><time datetime="2023-09-19T06:39:01.222Z" title="发表于 2023-09-19 14:39:01">2023-09-19</time></div></div><div class="aside-list-item"><div class="content"><a class="title" href="/2023/09/18/XiangShanHExtMemory/" title="Memory access of XiangShan H-Extension">Memory access of XiangShan H-Extension</a><time datetime="2023-09-18T12:11:40.026Z" title="发表于 2023-09-18 20:11:40">2023-09-18</time></div></div><div class="aside-list-item"><div class="content"><a class="title" href="/2023/09/07/NEMU-H-Ext/" title="NEMU-H-Ext">NEMU-H-Ext</a><time datetime="2023-09-07T02:13:08.470Z" title="发表于 2023-09-07 10:13:08">2023-09-07</time></div></div></div></div><div class="card-widget card-categories"><div class="item-headline">
+            <i class="fas fa-folder-open"></i>
+            <span>分类</span>
+            <a class="card-more-btn" href="/categories/" title="查看更多">
+    <i class="fas fa-angle-right"></i></a>
+            </div>
+            <ul class="card-category-list" id="aside-cat-list">
+            <li class="card-category-list-item "><a class="card-category-list-link" href="/categories/Hardware/"><span class="card-category-list-name">Hardware</span><span class="card-category-list-count">3</span></a><ul class="card-category-list child"><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/Hardware/RISC-V/"><span class="card-category-list-name">RISC-V</span><span class="card-category-list-count">2</span></a></li><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/Hardware/Tool/"><span class="card-category-list-name">Tool</span><span class="card-category-list-count">1</span></a></li></ul></li><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/Language/"><span class="card-category-list-name">Language</span><span class="card-category-list-count">1</span></a></li><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/RISC-V/"><span class="card-category-list-name">RISC-V</span><span class="card-category-list-count">8</span></a></li><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/Transaction/"><span class="card-category-list-name">Transaction</span><span class="card-category-list-count">2</span></a></li><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/Virtualization/"><span class="card-category-list-name">Virtualization</span><span class="card-category-list-count">4</span></a><ul class="card-category-list child"><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/Virtualization/Hardware/"><span class="card-category-list-name">Hardware</span><span class="card-category-list-count">1</span></a></li></ul></li>
+            </ul></div><div class="card-widget card-tags"><div class="item-headline"><i class="fas fa-tags"></i><span>标签</span></div><div class="card-tag-cloud"><a href="/tags/Paper/" style="font-size: 1.1em; color: #999">Paper</a> <a href="/tags/Transaction/" style="font-size: 1.18em; color: #999ca1">Transaction</a> <a href="/tags/Language/" style="font-size: 1.1em; color: #999">Language</a> <a href="/tags/Privileged-mode/" style="font-size: 1.34em; color: #99a3b0">Privileged mode</a> <a href="/tags/Virtualization/" style="font-size: 1.26em; color: #999fa8">Virtualization</a> <a href="/tags/Concurrent-Control/" style="font-size: 1.1em; color: #999">Concurrent Control</a> <a href="/tags/XiangShan/" style="font-size: 1.18em; color: #999ca1">XiangShan</a> <a href="/tags/OCC/" style="font-size: 1.1em; color: #999">OCC</a> <a href="/tags/Hardware/" style="font-size: 1.5em; color: #99a9bf">Hardware</a> <a href="/tags/Tool/" style="font-size: 1.18em; color: #999ca1">Tool</a> <a href="/tags/Bare-Metal-Virtualization/" style="font-size: 1.1em; color: #999">Bare-Metal Virtualization</a> <a href="/tags/RISC-V/" style="font-size: 1.42em; color: #99a6b7">RISC-V</a></div></div><div class="card-widget card-archives"><div class="item-headline"><i class="fas fa-archive"></i><span>归档</span></div><ul class="card-archive-list"><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2023/10/"><span class="card-archive-list-date">十月 2023</span><span class="card-archive-list-count">1</span></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2023/09/"><span class="card-archive-list-date">九月 2023</span><span class="card-archive-list-count">5</span></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2023/08/"><span class="card-archive-list-date">八月 2023</span><span class="card-archive-list-count">12</span></a></li><li class="card-archive-list-item"><a class="card-archive-list-link" href="/archives/2023/06/"><span class="card-archive-list-date">六月 2023</span><span class="card-archive-list-count">1</span></a></li></ul></div><div class="card-widget card-webinfo"><div class="item-headline"><i class="fas fa-chart-line"></i><span>网站资讯</span></div><div class="webinfo"><div class="webinfo-item"><div class="item-name">文章数目 :</div><div class="item-count">19</div></div><div class="webinfo-item"><div class="item-name">本站访客数 :</div><div class="item-count" id="busuanzi_value_site_uv"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">本站总访问量 :</div><div class="item-count" id="busuanzi_value_site_pv"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">最后更新时间 :</div><div class="item-count" id="last-push-date" data-lastPushDate="2023-10-04T03:45:14.437Z"><i class="fa-solid fa-spinner fa-spin"></i></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2023 By BLGS</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

@@ -1,0 +1,300 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>KVM-Qemu Reading Note 2 | BLGS's Blog</title><meta name="author" content="BLGS"><meta name="copyright" content="BLGS"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="The buildup of RISC-V virt machine in Qemu">
+<meta property="og:type" content="article">
+<meta property="og:title" content="KVM-Qemu Reading Note 2">
+<meta property="og:url" content="http://bl-gs.github.io/2023/10/24/KVM-2/index.html">
+<meta property="og:site_name" content="BLGS&#39;s Blog">
+<meta property="og:description" content="The buildup of RISC-V virt machine in Qemu">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://bl-gs.github.io/img/avatar.png">
+<meta property="article:published_time" content="2023-10-24T00:59:13.000Z">
+<meta property="article:modified_time" content="2023-10-24T05:06:18.945Z">
+<meta property="article:author" content="BLGS">
+<meta property="article:tag" content="Virtualization">
+<meta property="article:tag" content="KVM">
+<meta property="article:tag" content="Qemu">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://bl-gs.github.io/img/avatar.png"><link rel="shortcut icon" href="/img/favicon.ico"><link rel="canonical" href="http://bl-gs.github.io/2023/10/24/KVM-2/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: undefined,
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'KVM-Qemu Reading Note 2',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-10-24 13:06:18'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="BLGS's Blog" type="application/atom+xml">
+</head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/avatar.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">24</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">14</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">9</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background: linear-gradient(20deg, #0062be, #925696, #cc426e, #fb0347)"><nav id="nav"><span id="blog-info"><a href="/" title="BLGS's Blog"><img class="site-icon" src="/img/avatar.png"/><span class="site-name">BLGS's Blog</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">KVM-Qemu Reading Note 2</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2023-10-24T00:59:13.000Z" title="发表于 2023-10-24 08:59:13">2023-10-24</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2023-10-24T05:06:18.945Z" title="更新于 2023-10-24 13:06:18">2023-10-24</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Virtualization/">Virtualization</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="KVM-Qemu Reading Note 2"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="Base"><a href="#Base" class="headerlink" title="Base"></a>Base</h2><h3 id="Memory-Mapping"><a href="#Memory-Mapping" class="headerlink" title="Memory Mapping"></a>Memory Mapping</h3><p>在 <code>qemu/hw/riscv/virt.c</code> 中有关于地址空间映射的 hard-coded 定义，包括 ACLINT、PLIC、APLIC 等在地址空间的映射。</p>
+<pre><code class="c">#define VIRT_IMSIC_GROUP_MAX_SIZE      (1U &lt;&lt; IMSIC_MMIO_GROUP_MIN_SHIFT)
+...
+#define VIRT_IMSIC_MAX_SIZE            (VIRT_SOCKETS_MAX * \
+                                        VIRT_IMSIC_GROUP_MAX_SIZE)
+...
+
+/* KVM AIA only supports APLIC MSI. APLIC Wired is always emulated by QEMU. */
+static bool virt_use_kvm_aia(RISCVVirtState *s)
+&#123;
+    return kvm_irqchip_in_kernel() &amp;&amp; s-&gt;aia_type == VIRT_AIA_TYPE_APLIC_IMSIC;
+&#125;
+
+static const MemMapEntry virt_memmap[] = &#123;
+    [VIRT_DEBUG] =        &#123;        0x0,         0x100 &#125;,
+    [VIRT_MROM] =         &#123;     0x1000,        0xf000 &#125;,
+    [VIRT_TEST] =         &#123;   0x100000,        0x1000 &#125;,
+    [VIRT_RTC] =          &#123;   0x101000,        0x1000 &#125;,
+    [VIRT_CLINT] =        &#123;  0x2000000,       0x10000 &#125;,
+    [VIRT_ACLINT_SSWI] =  &#123;  0x2F00000,        0x4000 &#125;,
+    [VIRT_PCIE_PIO] =     &#123;  0x3000000,       0x10000 &#125;,
+    [VIRT_PLATFORM_BUS] = &#123;  0x4000000,     0x2000000 &#125;,
+    [VIRT_PLIC] =         &#123;  0xc000000, VIRT_PLIC_SIZE(VIRT_CPUS_MAX * 2) &#125;,
+    [VIRT_APLIC_M] =      &#123;  0xc000000, APLIC_SIZE(VIRT_CPUS_MAX) &#125;,
+    [VIRT_APLIC_S] =      &#123;  0xd000000, APLIC_SIZE(VIRT_CPUS_MAX) &#125;,
+    [VIRT_UART0] =        &#123; 0x10000000,         0x100 &#125;,
+    [VIRT_VIRTIO] =       &#123; 0x10001000,        0x1000 &#125;,
+    [VIRT_FW_CFG] =       &#123; 0x10100000,          0x18 &#125;,
+    [VIRT_FLASH] =        &#123; 0x20000000,     0x4000000 &#125;,
+    [VIRT_IMSIC_M] =      &#123; 0x24000000, VIRT_IMSIC_MAX_SIZE &#125;,
+    [VIRT_IMSIC_S] =      &#123; 0x28000000, VIRT_IMSIC_MAX_SIZE &#125;,
+    [VIRT_PCIE_ECAM] =    &#123; 0x30000000,    0x10000000 &#125;,
+    [VIRT_PCIE_MMIO] =    &#123; 0x40000000,    0x40000000 &#125;,
+    [VIRT_DRAM] =         &#123; 0x80000000,           0x0 &#125;,
+&#125;;
+
+/* PCIe high mmio is fixed for RV32 */
+#define VIRT32_HIGH_PCIE_MMIO_BASE  0x300000000ULL
+#define VIRT32_HIGH_PCIE_MMIO_SIZE  (4 * GiB)
+
+/* PCIe high mmio for RV64, size is fixed but base depends on top of RAM */
+#define VIRT64_HIGH_PCIE_MMIO_SIZE  (16 * GiB)
+</code></pre>
+<p>其中 memmap 数组中的结构体，第一项为起始地址（base），第二项为地址空间大小（size）</p>
+<pre><code class="c">typedef struct MemMapEntry &#123;
+    hwaddr base;
+    hwaddr size;
+&#125; MemMapEntry;
+</code></pre>
+<h2 id="Final"><a href="#Final" class="headerlink" title="Final"></a>Final</h2><p>在 virt machine 初始化的最后（函数<code>virt_machine_done</code>），会根据设备树文件配置各项设备</p>
+<pre><code class="c">/* load/create device tree */
+if (machine-&gt;dtb) &#123;
+    machine-&gt;fdt = load_device_tree(machine-&gt;dtb, &amp;s-&gt;fdt_size);
+    if (!machine-&gt;fdt) &#123;
+        error_report(&quot;load_device_tree() failed&quot;);
+        exit(1);
+    &#125;
+&#125; else &#123;
+    create_fdt(s, memmap);
+&#125;
+
+...
+
+fdt_load_addr = riscv_compute_fdt_addr(memmap[VIRT_DRAM].base,
+                                        memmap[VIRT_DRAM].size,
+                                        machine);
+riscv_load_fdt(fdt_load_addr, machine-&gt;fdt);
+
+/* load the reset vector */
+riscv_setup_rom_reset_vec(machine, &amp;s-&gt;soc[0], start_addr,
+                            virt_memmap[VIRT_MROM].base,
+                            virt_memmap[VIRT_MROM].size, kernel_entry,
+                            fdt_load_addr);
+
+/*
+    * Only direct boot kernel is currently supported for KVM VM,
+    * So here setup kernel start address and fdt address.
+    * TODO:Support firmware loading and integrate to TCG start
+    */
+if (kvm_enabled()) &#123;
+    riscv_setup_direct_kernel(kernel_entry, fdt_load_addr);
+&#125;
+
+if (virt_is_acpi_enabled(s)) &#123;
+    virt_acpi_setup(s);
+&#125;
+</code></pre>
+<p>加载并启动固件（firmwave）</p>
+<pre><code class="c">if (kvm_enabled()) &#123;
+    if (machine-&gt;firmware) &#123;
+        if (strcmp(machine-&gt;firmware, &quot;none&quot;)) &#123;
+            error_report(&quot;Machine mode firmware is not supported in &quot;
+                            &quot;combination with KVM.&quot;);
+            exit(1);
+        &#125;
+    &#125; else &#123;
+        machine-&gt;firmware = g_strdup(&quot;none&quot;);
+    &#125;
+&#125;
+
+firmware_end_addr = riscv_find_and_load_firmware(machine, firmware_name,
+                                                    start_addr, NULL);
+
+pflash_blk0 = pflash_cfi01_get_blk(s-&gt;flash[0]);
+if (pflash_blk0) &#123;
+    if (machine-&gt;firmware &amp;&amp; !strcmp(machine-&gt;firmware, &quot;none&quot;) &amp;&amp;
+        !kvm_enabled()) &#123;
+        /*
+            * Pflash was supplied but bios is none and not KVM guest,
+            * let&#39;s overwrite the address we jump to after reset to
+            * the base of the flash.
+            */
+        start_addr = virt_memmap[VIRT_FLASH].base;
+    &#125; else &#123;
+        /*
+            * Pflash was supplied but either KVM guest or bios is not none.
+            * In this case, base of the flash would contain S-mode payload.
+            */
+        riscv_setup_firmware_boot(machine);
+        kernel_entry = virt_memmap[VIRT_FLASH].base;
+    &#125;
+&#125;
+</code></pre>
+<p>加载内核镜像</p>
+<pre><code class="c">if (machine-&gt;kernel_filename &amp;&amp; !kernel_entry) &#123;
+    kernel_start_addr = riscv_calc_kernel_start_addr(&amp;s-&gt;soc[0],
+                                                        firmware_end_addr);
+
+    kernel_entry = riscv_load_kernel(machine, &amp;s-&gt;soc[0],
+                                        kernel_start_addr, true, NULL);
+&#125;
+</code></pre>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="http://BL-GS.github.io">BLGS</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://bl-gs.github.io/2023/10/24/KVM-2/">http://bl-gs.github.io/2023/10/24/KVM-2/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://BL-GS.github.io" target="_blank">BLGS's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Virtualization/">Virtualization</a><a class="post-meta__tags" href="/tags/KVM/">KVM</a><a class="post-meta__tags" href="/tags/Qemu/">Qemu</a></div><div class="post_share"><div class="social-share" data-image="/img/avatar.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/2023/10/23/KVM-1/" title="KVM-Qemu Reading Note 1"><div class="cover" style="background: var(--default-bg-color)"></div><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">KVM-Qemu Reading Note 1</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/2023/10/23/KVM-1/" title="KVM-Qemu Reading Note 1"><div class="cover" style="background: var(--default-bg-color)"></div><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-10-23</div><div class="title">KVM-Qemu Reading Note 1</div></div></a></div><div><a href="/2023/08/16/CPUVirtualization/" title="CPU Virtualization"><div class="cover" style="background: var(--default-bg-color)"></div><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-08-16</div><div class="title">CPU Virtualization</div></div></a></div><div><a href="/2023/08/19/RISC-V%20PMP/" title="RISC-V Privileged Architecture"><div class="cover" style="background: var(--default-bg-color)"></div><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-08-19</div><div class="title">RISC-V Privileged Architecture</div></div></a></div><div><a href="/2023/08/13/Paper%20Security%20and%20Performance%20in%20the%20Delegated%20User-level%20Virtualization/" title="Paper Reading: Duvisor"><div class="cover" style="background: var(--default-bg-color)"></div><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-08-13</div><div class="title">Paper Reading: Duvisor</div></div></a></div><div><a href="/2023/10/04/NoHype/" title="Paper: NoHype"><div class="cover" style="background: var(--default-bg-color)"></div><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-10-04</div><div class="title">Paper: NoHype</div></div></a></div><div><a href="/2023/10/03/Core%20Slicing/" title="Paper: Core Slicing"><div class="cover" style="background: var(--default-bg-color)"></div><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-10-03</div><div class="title">Paper: Core Slicing</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/img/avatar.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">BLGS</div><div class="author-info__description"></div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">24</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">14</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">9</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/BL-GS"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/BL-GS" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="/zhengxinrui02@gmail.com" target="_blank" title="Email"><i class="fa-envelope" style="color: #4a7dbe;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">Nothing</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Base"><span class="toc-number">1.</span> <span class="toc-text">Base</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Memory-Mapping"><span class="toc-number">1.1.</span> <span class="toc-text">Memory Mapping</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Final"><span class="toc-number">2.</span> <span class="toc-text">Final</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/10/24/KVM-2/" title="KVM-Qemu Reading Note 2">KVM-Qemu Reading Note 2</a><time datetime="2023-10-24T00:59:13.000Z" title="发表于 2023-10-24 08:59:13">2023-10-24</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/10/23/KVM-1/" title="KVM-Qemu Reading Note 1">KVM-Qemu Reading Note 1</a><time datetime="2023-10-23T07:13:08.000Z" title="发表于 2023-10-23 15:13:08">2023-10-23</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/10/09/VM%20Live%20Migration%20Orthus/" title="Paper: VMM Live Upgrade -- Orthus">Paper: VMM Live Upgrade -- Orthus</a><time datetime="2023-10-09T00:12:03.000Z" title="发表于 2023-10-09 08:12:03">2023-10-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/10/05/AliShenLong/" title="Paper: Bare-Metal Virtualization Alibaba ShenLong">Paper: Bare-Metal Virtualization Alibaba ShenLong</a><time datetime="2023-10-05T12:12:03.000Z" title="发表于 2023-10-05 20:12:03">2023-10-05</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2023/10/04/NoHype/" title="Paper: NoHype">Paper: NoHype</a><time datetime="2023-10-04T12:21:28.000Z" title="发表于 2023-10-04 20:21:28">2023-10-04</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2023 By BLGS</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

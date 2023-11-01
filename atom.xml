@@ -6,7 +6,7 @@
   <link href="http://bl-gs.github.io/atom.xml" rel="self"/>
   
   <link href="http://bl-gs.github.io/"/>
-  <updated>2023-10-06T12:17:58.818Z</updated>
+  <updated>2023-10-24T05:06:18.945Z</updated>
   <id>http://bl-gs.github.io/</id>
   
   <author>
@@ -17,13 +17,84 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>KVM-Qemu Reading Note 2</title>
+    <link href="http://bl-gs.github.io/2023/10/24/KVM-2/"/>
+    <id>http://bl-gs.github.io/2023/10/24/KVM-2/</id>
+    <published>2023-10-24T00:59:13.000Z</published>
+    <updated>2023-10-24T05:06:18.945Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="Base"><a href="#Base" class="headerlink" title="Base"></a>Base</h2><h3 id="Memory-Mapping"><a href="#Memory-Mapping" class="headerlink" title="Memory Mapping"></a>Memory Mapping</h3><p>在 <code>qemu/hw/riscv/virt.c</code> 中有关于地址空间映射的 hard-coded 定义，包括 ACLINT、PLIC、APLIC 等在地址空间的映射。</p><pre><code class="c">#define VIRT_IMSIC_GROUP_MAX_SIZE      (1U &lt;&lt; IMSIC_MMIO_GROUP_MIN_SHIFT)...#define VIRT_IMSIC_MAX_SIZE            (VIRT_SOCKETS_MAX * \                                        VIRT_IMSIC_GROUP_MAX_SIZE).../* KVM AIA only supports APLIC MSI. APLIC Wired is always emulated by QEMU. */static bool virt_use_kvm_aia(RISCVVirtState *s)&#123;    return kvm_irqchip_in_kernel() &amp;&amp; s-&gt;aia_type == VIRT_AIA_TYPE_APLIC_IMSIC;&#125;static const MemMapEntry virt_memmap[] = &#123;    [VIRT_DEBUG] =        &#123;        0x0,         0x100 &#125;,    [VIRT_MROM] =         &#123;     0x1000,        0xf000 &#125;,    [VIRT_TEST] =         &#123;   0x100000,        0x1000 &#125;,    [VIRT_RTC] =          &#123;   0x101000,        0x1000 &#125;,    [VIRT_CLINT] =        &#123;  0x2000000,       0x10000 &#125;,    [VIRT_ACLINT_SSWI] =  &#123;  0x2F00000,        0x4000 &#125;,    [VIRT_PCIE_PIO] =     &#123;  0x3000000,       0x10000 &#125;,    [VIRT_PLATFORM_BUS] = &#123;  0x4000000,     0x2000000 &#125;,    [VIRT_PLIC] =         &#123;  0xc000000, VIRT_PLIC_SIZE(VIRT_CPUS_MAX * 2) &#125;,    [VIRT_APLIC_M] =      &#123;  0xc000000, APLIC_SIZE(VIRT_CPUS_MAX) &#125;,    [VIRT_APLIC_S] =      &#123;  0xd000000, APLIC_SIZE(VIRT_CPUS_MAX) &#125;,    [VIRT_UART0] =        &#123; 0x10000000,         0x100 &#125;,    [VIRT_VIRTIO] =       &#123; 0x10001000,        0x1000 &#125;,    [VIRT_FW_CFG] =       &#123; 0x10100000,          0x18 &#125;,    [VIRT_FLASH] =        &#123; 0x20000000,     0x4000000 &#125;,    [VIRT_IMSIC_M] =      &#123; 0x24000000, VIRT_IMSIC_MAX_SIZE &#125;,    [VIRT_IMSIC_S] =      &#123; 0x28000000, VIRT_IMSIC_MAX_SIZE &#125;,    [VIRT_PCIE_ECAM] =    &#123; 0x30000000,    0x10000000 &#125;,    [VIRT_PCIE_MMIO] =    &#123; 0x40000000,    0x40000000 &#125;,    [VIRT_DRAM] =         &#123; 0x80000000,           0x0 &#125;,&#125;;/* PCIe high mmio is fixed for RV32 */#define VIRT32_HIGH_PCIE_MMIO_BASE  0x300000000ULL#define VIRT32_HIGH_PCIE_MMIO_SIZE  (4 * GiB)/* PCIe high mmio for RV64, size is fixed but base depends on top of RAM */#define VIRT64_HIGH_PCIE_MMIO_SIZE  (16 * GiB)</code></pre><p>其中 memmap 数组中的结构体，第一项为起始地址（base），第二项为地址空间大小（size）</p><pre><code class="c">typedef struct MemMapEntry &#123;    hwaddr base;    hwaddr size;&#125; MemMapEntry;</code></pre><h2 id="Final"><a href="#Final" class="headerlink" title="Final"></a>Final</h2><p>在 virt machine 初始化的最后（函数<code>virt_machine_done</code>），会根据设备树文件配置各项设备</p><pre><code class="c">/* load/create device tree */if (machine-&gt;dtb) &#123;    machine-&gt;fdt = load_device_tree(machine-&gt;dtb, &amp;s-&gt;fdt_size);    if (!machine-&gt;fdt) &#123;        error_report(&quot;load_device_tree() failed&quot;);        exit(1);    &#125;&#125; else &#123;    create_fdt(s, memmap);&#125;...fdt_load_addr = riscv_compute_fdt_addr(memmap[VIRT_DRAM].base,                                        memmap[VIRT_DRAM].size,                                        machine);riscv_load_fdt(fdt_load_addr, machine-&gt;fdt);/* load the reset vector */riscv_setup_rom_reset_vec(machine, &amp;s-&gt;soc[0], start_addr,                            virt_memmap[VIRT_MROM].base,                            virt_memmap[VIRT_MROM].size, kernel_entry,                            fdt_load_addr);/*    * Only direct boot kernel is currently supported for KVM VM,    * So here setup kernel start address and fdt address.    * TODO:Support firmware loading and integrate to TCG start    */if (kvm_enabled()) &#123;    riscv_setup_direct_kernel(kernel_entry, fdt_load_addr);&#125;if (virt_is_acpi_enabled(s)) &#123;    virt_acpi_setup(s);&#125;</code></pre><p>加载并启动固件（firmwave）</p><pre><code class="c">if (kvm_enabled()) &#123;    if (machine-&gt;firmware) &#123;        if (strcmp(machine-&gt;firmware, &quot;none&quot;)) &#123;            error_report(&quot;Machine mode firmware is not supported in &quot;                            &quot;combination with KVM.&quot;);            exit(1);        &#125;    &#125; else &#123;        machine-&gt;firmware = g_strdup(&quot;none&quot;);    &#125;&#125;firmware_end_addr = riscv_find_and_load_firmware(machine, firmware_name,                                                    start_addr, NULL);pflash_blk0 = pflash_cfi01_get_blk(s-&gt;flash[0]);if (pflash_blk0) &#123;    if (machine-&gt;firmware &amp;&amp; !strcmp(machine-&gt;firmware, &quot;none&quot;) &amp;&amp;        !kvm_enabled()) &#123;        /*            * Pflash was supplied but bios is none and not KVM guest,            * let&#39;s overwrite the address we jump to after reset to            * the base of the flash.            */        start_addr = virt_memmap[VIRT_FLASH].base;    &#125; else &#123;        /*            * Pflash was supplied but either KVM guest or bios is not none.            * In this case, base of the flash would contain S-mode payload.            */        riscv_setup_firmware_boot(machine);        kernel_entry = virt_memmap[VIRT_FLASH].base;    &#125;&#125;</code></pre><p>加载内核镜像</p><pre><code class="c">if (machine-&gt;kernel_filename &amp;&amp; !kernel_entry) &#123;    kernel_start_addr = riscv_calc_kernel_start_addr(&amp;s-&gt;soc[0],                                                        firmware_end_addr);    kernel_entry = riscv_load_kernel(machine, &amp;s-&gt;soc[0],                                        kernel_start_addr, true, NULL);&#125;</code></pre>]]></content>
+    
+    
+    <summary type="html">The buildup of RISC-V virt machine in Qemu</summary>
+    
+    
+    
+    <category term="Virtualization" scheme="http://bl-gs.github.io/categories/Virtualization/"/>
+    
+    
+    <category term="Virtualization" scheme="http://bl-gs.github.io/tags/Virtualization/"/>
+    
+    <category term="KVM" scheme="http://bl-gs.github.io/tags/KVM/"/>
+    
+    <category term="Qemu" scheme="http://bl-gs.github.io/tags/Qemu/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>KVM-Qemu Reading Note 1</title>
+    <link href="http://bl-gs.github.io/2023/10/23/KVM-1/"/>
+    <id>http://bl-gs.github.io/2023/10/23/KVM-1/</id>
+    <published>2023-10-23T07:13:08.000Z</published>
+    <updated>2023-10-24T02:18:42.467Z</updated>
+    
+    <content type="html"><![CDATA[<blockquote><p>QEMU 的代码一定是我见过最漂亮工整的代码，阅读起来赏心悦目。</p><p>为什么 C++ 会被喷，因为很多人拿着 C 的思维写 C++，偶尔想起来一些 C++ 的特性就随便用用，丝毫不注意规范。<br>这样你让他去写 C 也会出问题。<br>我认为 Rust 最大的好处，在于规定了你该如何写代码，即便如此，仍然不可避免有人写的乱糟糟。</p><p>为什么 C 不会被喷，因为语法简单，应用广泛，没啥好喷的。</p><p>所以程序员，应该要培养自己的强迫症：命名规范、完整，注释完善，注意兼容性</p></blockquote><h2 id="Start"><a href="#Start" class="headerlink" title="Start"></a>Start</h2><p>根据<a href="https://github.com/kvm-riscv/howto/wiki/KVM-RISCV64-on-QEMU">KVM &amp; Linux 和 QEMU 编译</a>教程完成基本环境的构建。</p><p>在命令行环境下：</p><pre><code class="shell">gdb --args ./qemu/build/qemu-system-riscv64 -cpu rv64 -M virt -m 512M -nographic -kernel ./build-riscv64/arch/riscv/boot/Image -i                                               nitrd ./rootfs_kvm_riscv64.img -append &quot;root=/dev/ram rw console=ttyS0 earlycon=sbi&quot;</code></pre><p>在 vscode gdb 的环境下，添加<code>launch.json</code>文件：</p><pre><code class="json">&#123;    &quot;version&quot;: &quot;0.2.0&quot;,    &quot;configurations&quot;: [        &#123;            &quot;name&quot;: &quot;Debug&quot;,            &quot;type&quot;: &quot;gdb&quot;,            &quot;request&quot;: &quot;launch&quot;,            &quot;target&quot;: &quot;./qemu/build/qemu-system-riscv64&quot;,            &quot;cwd&quot;: &quot;$&#123;workspaceRoot&#125;&quot;,            &quot;arguments&quot;: &quot;-cpu rv64 -M virt -m 512M -nographic -kernel ./build-riscv64/arch/riscv/boot/Image -initrd ./rootfs_kvm_riscv64.img -append \&quot;root=/dev/ram rw console=ttyS0 earlycon=sbi\&quot;&quot;,            &quot;valuesFormatting&quot;: &quot;parseText&quot;,            &quot;stopAtEntry&quot;: true        &#125;    ]&#125;</code></pre><h2 id="QEMU-init"><a href="#QEMU-init" class="headerlink" title="QEMU init"></a>QEMU init</h2><p>在 main 函数之前，qemu 其实已经做了一些准备工作，即通过 <code>__attribute__((constructor))</code> 标识的各类函数，这里主要涉及 <code>do_qemu_init_##function(void)</code> 函数（module.h），在 qemu 的众多代码中通过 <code>block_init</code>，<code>opts_init</code> 等宏调用 <code>module_init</code> 函数，间接调用 <code>register_module_init</code> 函数，从而在 main 函数开始之前就完成了这些模块的初始化操作。（对应的代码技法<a href="https://66ring.github.io/2021/04/12/universe/qemu/qemu_initial_framework/">参考</a>）</p><p>开始调试来到 <code>qemu-system-riscv64</code> 的 main 函数处：</p><pre><code class="c">// qemu/system/main.cint main(int argc, char **argv)&#123;    qemu_init(argc, argv);    return qemu_main();&#125;</code></pre><p>其在带着命令行参数初始化 qemu 之后（qemu_init），进入 qemu_main 函数做循环。</p><p>来到 qemu_init 函数（vl.c），其首先初始化各种选项的描述（qemu_add_opts，qemu_add_drive_opts，qemu_plugin_add_opts）。然后就是一长串的选项解析。<br>其会将对应选项的列表指针分别顺序填入 <code>vm_config_groups</code> 和 <code>drive_config_groups</code> 中。</p><ul><li>初始化各个功能模块（在 main 函数之前就以被加入链表），对各个模块列表中的成员调用 <code>init</code> 函数</li><li>设置错误信息格式</li><li>确定可执行文件的文件路径</li><li>初始化架构模块</li><li>初始化各个子系统</li><li>初始化 CPU、时钟、内存空间、设备、前后端驱动等</li></ul><p>具体的初始化顺序注释中已经非常详尽。之后，将从各个分类模块详细叙述这些功能。</p><p>在完成初始化之后，来到 <code>qemu_main_loop</code> 函数中，通过死循环，轮询前台的事件并处理。除非接收到 <strong>shutdown</strong> 的请求，否则不断地执行 <code>main_loop_wait</code> 函数。</p><pre><code class="c">int qemu_main_loop(void)&#123;    int status = EXIT_SUCCESS;    while (!main_loop_should_exit(&amp;status)) &#123;        main_loop_wait(false);    &#125;    return status;&#125;</code></pre><p>在轮询中，采用观察者设计模式，配置 main_loop_pool_notifiers，然后等待消息触发。此外，等待一段时间（timeout）也会唤醒该线程。</p><pre><code class="c">void main_loop_wait(int nonblocking)&#123;    MainLoopPoll mlpoll = &#123;        .state = MAIN_LOOP_POLL_FILL,        .timeout = UINT32_MAX,        .pollfds = gpollfds,    &#125;;    int ret;    int64_t timeout_ns;    if (nonblocking) &#123;        mlpoll.timeout = 0;    &#125;    /* poll any events */    g_array_set_size(gpollfds, 0); /* reset for new iteration */    /* XXX: separate device handlers from system ones */    notifier_list_notify(&amp;main_loop_poll_notifiers, &amp;mlpoll);    if (mlpoll.timeout == UINT32_MAX) &#123;        timeout_ns = -1;    &#125; else &#123;        timeout_ns = (uint64_t)mlpoll.timeout * (int64_t)(SCALE_MS);    &#125;    timeout_ns = qemu_soonest_timeout(timeout_ns,                                      timerlistgroup_deadline_ns(                                          &amp;main_loop_tlg));    ret = os_host_main_loop_wait(timeout_ns);    mlpoll.state = ret &lt; 0 ? MAIN_LOOP_POLL_ERR : MAIN_LOOP_POLL_OK;    notifier_list_notify(&amp;main_loop_poll_notifiers, &amp;mlpoll);    if (icount_enabled()) &#123;        /*         * CPU thread can infinitely wait for event after         * missing the warp         */        icount_start_warp_timer();    &#125;    qemu_clock_run_all_timers();&#125;</code></pre><p>在循环结束，也就是要关闭程序的时候，执行 <code>qemu_cleanup</code> 清理现场。</p>]]></content>
+    
+    
+    <summary type="html">Initialization of Qemu</summary>
+    
+    
+    
+    <category term="Virtualization" scheme="http://bl-gs.github.io/categories/Virtualization/"/>
+    
+    
+    <category term="Virtualization" scheme="http://bl-gs.github.io/tags/Virtualization/"/>
+    
+    <category term="KVM" scheme="http://bl-gs.github.io/tags/KVM/"/>
+    
+    <category term="Qemu" scheme="http://bl-gs.github.io/tags/Qemu/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Paper: VMM Live Upgrade -- Orthus</title>
+    <link href="http://bl-gs.github.io/2023/10/09/VM%20Live%20Migration%20Orthus/"/>
+    <id>http://bl-gs.github.io/2023/10/09/VM%20Live%20Migration%20Orthus/</id>
+    <published>2023-10-09T00:12:03.000Z</published>
+    <updated>2023-10-09T07:57:25.237Z</updated>
+    
+    <content type="html"><![CDATA[<p>虚拟机热迁移对于云服务的实时更新具有重要意义，能够为服务带来新的特征，提升安全性。该文章提出了 VMM live upgrade 希望实现快速且低运行时副作用地实现热迁移，同时适用于大的修改补丁。</p><h2 id="Background"><a href="#Background" class="headerlink" title="Background"></a>Background</h2><p>在云设施中，现存两种热迁移的方法：<strong>内核热补丁 kernel live patching</strong> 和 <strong>虚拟机热迁移 VM live migration</strong></p><ul><li><strong>Kernel live patching</strong><ul><li>将补丁应用到运行中的内核，同时无需重启系统</li><li><strong>缺点</strong><ul><li>不能够应用于较大较复杂的更新，比如修改了持久性数据结构的更新</li><li>频繁的补丁会导致系统难以维持</li></ul></li></ul></li><li><strong>VM live migration</strong><ul><li>迭代地更新数据状态，在最后的一次迭代，完全关闭虚拟机，移动状态，重启 VM</li><li>开销来源于 KVM 的脏页追踪和内存带宽的竞争</li><li><strong>缺点</strong>：<ul><li>需要空闲的服务器和网络带宽去存储被移植的虚拟机，难以提高移植并行度</li><li>需要关闭虚拟机，导致性能降级和服务停机</li><li>无法支持设备直通</li><li>对于小更新，尤其是牵扯到众多 VM 的更新，开销太大</li></ul></li></ul></li></ul><h2 id="Main-Idea"><a href="#Main-Idea" class="headerlink" title="Main Idea"></a>Main Idea</h2><p>提出一个 VMM live upgrade 的方法 <strong>Orthus</strong>。通过替换运行中的 VMM 来实现热迁移。</p><h3 id="Assumption"><a href="#Assumption" class="headerlink" title="Assumption"></a>Assumption</h3><ul><li>宿主内核与不可信虚拟机保持独立</li><li>宿主机具有网络隔离、设备直通、驱动域等功能</li><li>主要的攻击面在 VMM 和 VM 之间</li></ul><h2 id="Design"><a href="#Design" class="headerlink" title="Design"></a>Design</h2><p>Orthus 有三个关键特征：<em>dual KVM</em>, <em>VM grafting</em>, <em>device handover</em></p><h3 id="Dual-KVM"><a href="#Dual-KVM" class="headerlink" title="Dual KVM"></a>Dual KVM</h3><p><img src="/../images/Orthus%20Dual%20KVM.png"></p><blockquote><p>KVM 包括几个模块：</p><ul><li><strong>kvm.ko</strong>：KVM 的架构依赖层</li><li><strong>kvm-intel.ko&#x2F;kvm-amd.ko</strong> 管理 intel&#x2F;amd 的虚拟化硬件扩展</li></ul></blockquote><p>Orthus 维持两个 KVM，其中一个是 original 的，另一个是 updated 的。同时加载两个 KVM，就需要解决程序的符号冲突问题，同时允许它们共享虚拟化硬件。</p><p>Orthus 将 <code>kvm-ko</code> 中的大部分函数移到 <code>kvm-intel.ko</code>，将所有全局函数移动到 local，将 KVM 里的全局变量和 kvm-intel.ko 相关联。</p><ul><li>在加载 kvm-intel.ko 时，其提供一个指针数组，与函数相关联</li><li>由于虚拟化硬件扩展是无状态的，因此可以被多个 KVM 实例共享</li><li>将 VM 从旧的 kvm-intel.ko 迁移到新的，然后将旧有的丢弃</li></ul><h3 id="VM-grafting"><a href="#VM-grafting" class="headerlink" title="VM grafting"></a>VM grafting</h3><p><img src="/../images/Orthus%20VM%20migration.png"></p><p>VM 的资源都是由 QEMU 进程分配和管理的，包括 guest memory、vCPUs、存储和网络等等。</p><p>移植 VM，就需要将其内存和中间状态做转移操作。鉴于两个 KVM 实例在同一台机器上运行，Orthus通过 “<strong>cut-and-paste</strong>“ 的方法实现这一过程。Orthus 在 QEMU 内部实现了 VM grafting，因为 QEMU 中保存了 VM 的大量中间状态。</p><ol><li>将 VM 的内存标记为 reserved</li><li>fork 原始的 QEMU 进程</li><li>暂停父进程，通过 savevm_state 函数保存虚拟机中间状态</li><li>子进程加载更新后的 QEMU 程序</li><li>子进程通过 loadvm_state 函数加载虚拟机中间状态</li><li>将 VM 的内存映射到新的 QEMU 进程里，恢复 VM</li></ol><h3 id="device-handover"><a href="#device-handover" class="headerlink" title="device handover"></a>device handover</h3><p>设备的访问限制通过 IOMMU 完成，因此移植 VM，就需要转移设备的中间状态，重建 IOMMU 映射表</p>]]></content>
+    
+    
+    <summary type="html">Summarization about pape: Fast and Scalable VMM Live Upgrade in Large Cloud Infrastructure. The idea is mentioned in paper which introduce Alibaba ShenLong</summary>
+    
+    
+    
+    <category term="Virtualization" scheme="http://bl-gs.github.io/categories/Virtualization/"/>
+    
+    
+    <category term="Virtualization" scheme="http://bl-gs.github.io/tags/Virtualization/"/>
+    
+  </entry>
+  
+  <entry>
     <title>Paper: Bare-Metal Virtualization Alibaba ShenLong</title>
     <link href="http://bl-gs.github.io/2023/10/05/AliShenLong/"/>
     <id>http://bl-gs.github.io/2023/10/05/AliShenLong/</id>
     <published>2023-10-05T12:12:03.000Z</published>
-    <updated>2023-10-06T12:17:58.818Z</updated>
+    <updated>2023-10-08T02:14:20.226Z</updated>
     
-    <content type="html"><![CDATA[<h2 id="Background"><a href="#Background" class="headerlink" title="Background"></a>Background</h2><p>现存的单租户裸金属服务（single-tenant bare-metal service）：</p><ul><li><strong>低效性</strong>：只能将一整个物理服务器租给用户</li><li><strong>单线程低效性</strong>：云服务器的处理器通常频率较低，单核性能不高</li><li><strong>互操作性</strong>：单租户裸金属服务器通常由 out-of-band 管理系统负责，不太安全。</li><li><strong>可兼容性</strong>：裸金属服务需要兼容 VM-based 服务以便迁移</li></ul><h2 id="Design"><a href="#Design" class="headerlink" title="Design"></a>Design</h2><p><img src="/../images/AliBM-Hive.png"></p><p>BM-Hive 服务器的架构和 VM-based 服务器的架构主要的不同在于：vm-guest 在虚拟 CPU 和内存上运行，然而 bm-guest 直接在 Compute Board 的物理 CPU 和内存上执行。</p><p><img src="/../images/AliBM-Hive%20Architecutre.png"></p><h3 id="Abstract-Architecture"><a href="#Abstract-Architecture" class="headerlink" title="Abstract Architecture"></a>Abstract Architecture</h3><p>BM-Hive 服务器包括三个部分：</p><ul><li>bare-metal hypervisor (bm-hypervisor)<ul><li>在 Main Board 上运行</li><li>负责所有 bm-guest 的生命周期，同时作为 IO-Bond 的后端</li><li>不同于 vm-hypervisor，无需虚拟化 CPU 和内存</li><li>不具有更高的特权级，而是从外部控制 guest</li></ul></li><li>bare-metal guest (bm-guest)<ul><li>在单独的 Compute Board 上运行</li><li>通过 IO-Bond(virtio) 间接和 bm-hypervisor 交互</li></ul></li><li>IO-Bond <ul><li>硬件实现 (FPGA&#x2F;ASIC)</li><li>在 PCIe 上虚拟化 IO 设备</li><li>连接 Compute Board 和 Main Board，将 bm-guest IO 请求和命令转发给 bm-hypervisor，通过 DMA 交换数据</li><li>在硬件上隔离 bm-guest</li></ul></li></ul><h3 id="Hardware-Component"><a href="#Hardware-Component" class="headerlink" title="Hardware Component"></a>Hardware Component</h3><ul><li>Compute Board<ul><li>dedicated processor</li><li>dedicated memory unit</li><li>PCIe interface</li></ul></li><li>IO-Bond<ul><li>要求正确签名</li><li>连接 Compute Board 和 Main Board</li></ul></li><li>Main Board</li></ul><h3 id="Detail"><a href="#Detail" class="headerlink" title="Detail"></a>Detail</h3><ol><li>云设施选择一个可用的裸金属服务器</li><li>启动一个空闲的计算板</li><li>通过板上的 BIOS 启动 boot loader</li><li>加载 bm-guest 的内核</li><li>之后通过 virtio 访问云存储器和网络</li></ol><h2 id="Problem"><a href="#Problem" class="headerlink" title="Problem"></a>Problem</h2><ul><li>不能超订阅资源</li><li>划分不够细粒度，也就是可扩展性不高</li><li>无法实现虚拟机的热迁移（讨论通过指出通过 Orthus 系统能够实现）</li><li>需要一个服务器（Main Board）单独执行 BM-Hypervisor</li></ul>]]></content>
+    <content type="html"><![CDATA[<h2 id="Background"><a href="#Background" class="headerlink" title="Background"></a>Background</h2><p>现存的单租户裸金属服务（single-tenant bare-metal service）：</p><ul><li><strong>低效性</strong>：只能将一整个物理服务器租给用户</li><li><strong>单线程低效性</strong>：云服务器的处理器通常频率较低，单核性能不高</li><li><strong>低互操作性</strong>：单租户裸金属服务器通常由 out-of-band 管理系统负责，不太安全。</li><li><strong>低可兼容性</strong>：裸金属服务需要兼容 VM-based 服务以便迁移</li></ul><h2 id="Design"><a href="#Design" class="headerlink" title="Design"></a>Design</h2><p><img src="/../images/AliBM-Hive.png"></p><p>BM-Hive 服务器的架构和 VM-based 服务器的架构主要的不同在于：vm-guest 在虚拟 CPU 和内存上运行，然而 bm-guest 直接在 Compute Board 的物理 CPU 和内存上执行。</p><ul><li>最大的区别在于 BM-Hive 的客户系统在物理 CPU 上运行而非 vCPU</li><li>通过 virtio 完成网络和设备IO操作</li></ul><p><img src="/../images/AliBM-Hive%20Architecutre.png"></p><h3 id="Abstract-Architecture"><a href="#Abstract-Architecture" class="headerlink" title="Abstract Architecture"></a>Abstract Architecture</h3><p>BM-Hive 服务器包括三个部分：</p><ul><li>bare-metal hypervisor (bm-hypervisor)<ul><li>在 Main Board 上运行</li><li>负责所有 bm-guest 的生命周期，同时作为 IO-Bond 的后端</li><li>不同于 vm-hypervisor，无需虚拟化 CPU 和内存</li><li>不具有更高的特权级，而是从外部控制 guest</li></ul></li><li>bare-metal guest (bm-guest)<ul><li>在单独的 Compute Board 上运行</li><li>通过 IO-Bond(virtio) 间接和 bm-hypervisor 交互</li></ul></li><li>IO-Bond <ul><li>硬件实现 (FPGA&#x2F;ASIC)</li><li>在 PCIe 上虚拟化 IO 设备</li><li>连接 Compute Board 和 Main Board，将 bm-guest IO 请求和命令转发给 bm-hypervisor</li><li>由于IO前后端不共享内存，其通过两个分别隶属于前后端的 ring buffer，用 DMA 交换数据</li><li>使用 poll mode driver(PMD) 实现 DPDK 和 SPDK</li><li>在硬件上隔离 bm-guest，通过邮箱寄存器与 bm-hypervisor 和 bm-guest 交流</li></ul></li></ul><h3 id="Hardware-Component"><a href="#Hardware-Component" class="headerlink" title="Hardware Component"></a>Hardware Component</h3><ul><li>Compute Board<ul><li>dedicated processor</li><li>dedicated memory unit</li><li>PCIe interface</li><li>能够支持各种类型的处理器，独立于 Mian Board 的配置。</li></ul></li><li>IO-Bond<ul><li>要求正确签名</li><li>连接 Compute Board 和 Main Board</li></ul></li><li>Main Board<ul><li>只需要覆盖 IO 处理和 bm-hypervisor 的功能即可，其余的尽可能简化</li></ul></li></ul><h3 id="Procedure"><a href="#Procedure" class="headerlink" title="Procedure"></a>Procedure</h3><ol><li>云设施选择一个可用的裸金属服务器</li><li>启动一个空闲的计算板</li><li>通过板上的 BIOS 启动 boot loader</li><li>加载 bm-guest 的内核</li><li>之后通过 virtio 访问云存储器和网络</li></ol><h2 id="Problem"><a href="#Problem" class="headerlink" title="Problem"></a>Problem</h2><ul><li>不能超订阅资源</li><li>IO 路径更长，造成一定的 IO 和网络开销</li><li>划分不够细粒度，也就是可扩展性不高</li><li>无法实现虚拟机的热迁移（讨论通过指出通过 Orthus 系统能够实现）</li><li>需要一个服务器（Main Board）单独执行 BM-Hypervisor</li></ul>]]></content>
     
     
     <summary type="html">Summarization about paper: High-density Multi-tenant Bare-metal Cloud</summary>
@@ -181,9 +252,9 @@
     <link href="http://bl-gs.github.io/2023/09/07/NEMU-H-Ext/"/>
     <id>http://bl-gs.github.io/2023/09/07/NEMU-H-Ext/</id>
     <published>2023-09-07T02:13:08.470Z</published>
-    <updated>2023-09-14T11:51:19.650Z</updated>
+    <updated>2023-11-01T01:46:00.626Z</updated>
     
-    <content type="html"><![CDATA[<h1 id="H-Extension-Difftest"><a href="#H-Extension-Difftest" class="headerlink" title="H Extension Difftest"></a>H Extension Difftest</h1><p>通过 Spike 进行 difftest 功能验证</p><pre><code class="shell">git clone https://github.com/OpenXiangShan/riscv-isa-sim.gitcd riscv-isa-simgit checkout h-extcd difftest &amp;&amp; make -j</code></pre><p>即可获得用于 NEMU Difftest 的 Spike 动态链接库</p><h1 id="KVM-NEMU-模拟"><a href="#KVM-NEMU-模拟" class="headerlink" title="KVM NEMU 模拟"></a>KVM NEMU 模拟</h1><ol><li><p>按照教程 <a href="https://github.com/kvm-riscv/howto/wiki/KVM-RISCV64-on-QEMU">KVM RISCV64 on QEMU · kvm-riscv&#x2F;howto Wiki (github.com)</a> 构建一个 QEMU 上的 KVM Linux 工作负载。QEMU 输出可以作为 Debug 参照</p></li><li><p>打开 Linux menuconfig，配置</p><pre><code>General setup -&gt;    Initramfs source file(s) 填入 busybox 的安装目录地址Kernel features -&gt;       SBI v0.1 support Device Drivers -&gt;      Character devices         Serial driver -&gt;             Early console using RISC-V SBI         RISC-V SBI console support</code></pre></li><li><p>将 <a href="https://github.com/OpenXiangShan/riscv-pk/tree/noop/dts">riscv-pk&#x2F;dts at noop · OpenXiangShan&#x2F;riscv-pk (github.com)</a> 中的 dts 下下来，主要是 system.dts 和 noop.dtsi 文件。配置 platform.dtsi 软连接到 noop.dtsi。</p></li><li><p>修改 system.dtsi 中 <code>L6: cpu</code> 的 <code>riscv,isa</code> 为 <code>rv64imafdch</code> 。主要确保 h 标志位。</p></li><li><p>修改 noop.dtsi 中的 bootargs 为：<code>console=hvc0 earlycon=sbi</code></p></li><li><p>整合设备树 <code>dtc -O dtb -o xiangshan.dtb system.dtb</code>。注意 system.dts 和 platform.dtsi 在同一目录下</p></li><li><p>编译 opensbi：</p><pre><code class="shell">make PLATFORM=generic CROSS_COMPILE=riscv64-unknown-linux-gnu- FW_FDT_PATH=&lt;dtb path&gt;/xiangshan.dtb FW_PAYLOAD_PATH=&lt;workspace path&gt;/build-riscv64/arch/riscv/boot/Image  -j</code></pre></li><li><p>得到的 <code>opensbi/build/platform/generic/fireware/fw_payload.bin</code> 即可作为可执行文件给 NEMU 执行</p></li></ol>]]></content>
+    <content type="html"><![CDATA[<h1 id="H-Extension-Difftest"><a href="#H-Extension-Difftest" class="headerlink" title="H Extension Difftest"></a>H Extension Difftest</h1><p>通过 Spike 进行 difftest 功能验证</p><pre><code class="shell">git clone https://github.com/OpenXiangShan/riscv-isa-sim.gitcd riscv-isa-simgit checkout h-extcd difftest &amp;&amp; make -j</code></pre><p>即可获得用于 NEMU Difftest 的 Spike 动态链接库</p><h2 id="KVM-NEMU-模拟"><a href="#KVM-NEMU-模拟" class="headerlink" title="KVM NEMU 模拟"></a>KVM NEMU 模拟</h2><ol><li>按照教程 <a href="https://github.com/kvm-riscv/howto/wiki/KVM-RISCV64-on-QEMU">KVM RISCV64 on QEMU · kvm-riscv&#x2F;howto Wiki (github.com)</a> 构建一个 QEMU 上的 KVM Linux 工作负载。QEMU 输出可以作为 Debug 参照</li><li>在完成 busybox 的配置后（主要是将一个没有 initram 的 Linux 镜像放进去文件系统后），打开 Linux menuconfig 配置<pre><code>$ make -C linux O=`pwd`/build-riscv64 menuconfigGeneral setup -&gt;    Initramfs source file(s) 填入 busybox 的安装目录地址Kernel features -&gt;       SBI v0.1 support Device Drivers -&gt;      Character devices         Serial driver -&gt;             Early console using RISC-V SBI         RISC-V SBI console support</code></pre></li><li>将 <a href="https://github.com/pxk27/opensbi/tree/H-extension/dts">riscv-pk&#x2F;dts at noop · OpenXiangShan&#x2F;riscv-pk (github.com)</a> 中的设备树文件下载下来，主要是 system.dts 和 noop.dtsi 文件。配置 platform.dtsi 软连接到 noop.dtsi。</li><li>修改 system.dtsi 中 <code>L6: cpu</code> 的 <code>riscv,isa</code> 为 <code>rv64imafdch</code> 。主要确保 h 标志位。</li><li>修改 noop.dtsi 中的 bootargs 为：<code>console=hvc0 earlycon=sbi</code>。</li><li>记得将 platform.dtsi 中设置的内存大小调大一点，不然会出问题，在之后 Linux 镜像加载出问题时也可以尝试将内存加大一点：<pre><code>L11: memory@100000000 &#123;    device_type = &quot;memory&quot;;    reg = &lt;0x0 0x80000000 0x0 0x20000000&gt;;&#125;;</code></pre></li><li>整合设备树 <code>dtc -O dtb -o xiangshan.dtb system.dtb</code>。注意 system.dts 和 platform.dtsi 在同一目录下，</li><li>编译 opensbi：<pre><code class="shell">make PLATFORM=generic CROSS_COMPILE=riscv64-unknown-linux-gnu- FW_FDT_PATH=&lt;dtb path&gt;/xiangshan.dtb FW_PAYLOAD_PATH=&lt;workspace path&gt;/build-riscv64/arch/riscv/boot/Image  -j</code></pre></li><li>得到的 <code>opensbi/build/platform/generic/fireware/fw_payload.bin</code> 即可作为可执行文件给 NEMU 执行</li></ol><h2 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h2><ol><li>最简单粗暴的方式：<ol><li>删掉重做，能解决绝大部分问题</li></ol></li><li>重新编译 Linux 的时候，又要在控制台重新配置 config：<ol><li>注意是否配置好了 CROSS_COMPILE 和 ARCH，是否删除掉了 Linux 文件</li><li>假如出现该问题，建议完全删掉构建文件夹，重新操作一次，避免种种未知问题</li></ol></li><li>NEMU 在启动之后，输入没有反应<ol><li>那可能是因为 NEMU 默认不开启键盘中断。最简单的做法是在 busybox 文件系统的安装目录（如按教程为 <code>__install</code> 目录）下，修改 <code>/etc/init.d/rcS</code> 文件，添加需要执行的操作。如在教程中提到加载 KVM 模块并启动 guest OS 的操作，就可以在 rcS 文件中添加：<pre><code>insmod kvm.ko./apps/lkvm-static run -m 128 -c2 --console serial -p &quot;console=ttyS0 earlycon&quot; -k ./apps/Image --debug</code></pre>  其他的操作可以参考网上 busybox 以及 initram 的参考资料</li></ol></li><li>如何配合 NEMU 的检查点<ol><li>基于使用 opensbi 的 generic 架构编译的假设，我们修改 opensbi 的 <code>platform/generic/objects.mk</code> 文件后，重新编译即可：<pre><code>- FW_TEXT_START=0x80000000+ FW_TEXT_START=0x800a0000...ifeq ($(PLATFORM_RISCV_XLEN), 32)# This needs to be 4MB aligned for 32-bit system- FW_PAYLOAD_OFFSET=0x400000+ FW_PAYLOAD_OFFSET=0x760000else# This needs to be 2MB aligned for 64-bit system- FW_PAYLOAD_OFFSET=0x200000+ FW_PAYLOAD_OFFSET=0x360000endif</code></pre></li></ol></li></ol>]]></content>
     
     
       
@@ -484,65 +555,6 @@
     <category term="Virtualization" scheme="http://bl-gs.github.io/tags/Virtualization/"/>
     
     <category term="Paper" scheme="http://bl-gs.github.io/tags/Paper/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Virtualization Introduction</title>
-    <link href="http://bl-gs.github.io/2023/08/13/Virtualization/"/>
-    <id>http://bl-gs.github.io/2023/08/13/Virtualization/</id>
-    <published>2023-08-13T14:00:11.686Z</published>
-    <updated>2023-08-16T13:19:56.911Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h2><p>虚拟化是将单一物理设备模拟为相互隔离的多个虚拟设备，同时保证这些虚拟设备的高效性。</p><h3 id="Hypervisor"><a href="#Hypervisor" class="headerlink" title="Hypervisor"></a>Hypervisor</h3><p>Hypervisor 也成为 VMM(virtual machine monitor) 虚拟机管理程序，负责与不同虚拟机之间打交道。<br>在没有虚拟化硬件扩展的情况下 guest OS 和 guest application 都需要在 非特权 de-privileged 模式下运行，此时 Hypervisor 跑在特权模式下，负责管理硬件资源，与 VM 互动。</p><h3 id="特权指令"><a href="#特权指令" class="headerlink" title="特权指令"></a>特权指令</h3><p>Popek 和 Goldberg 有一篇虚拟化的经典论文，把需要在特权模式下执行的指令分成了两类：</p><ul><li><strong>sensitive instructions 敏感指令</strong>：操作特权资源的指令，包括修改虚拟机的运行模式或者下面物理机的状态；读写时钟、中断等寄存器；访问存储保护系统、地址重定位系统及所有的I&#x2F;O指令。</li><li><strong>privileged instructions 特权指令</strong>：系统中有一些操作和管理关键系统资源的指令，这些指令只有在最高特权级上能够正确运行。如果在非最高特权级上运行，特权指令会引发一个异常，处理器会陷入到最高特权级，交由系统软件处理了。</li></ul><p>其中，敏感指令是特权指令的子集。这种标准被称为 classically virtualized 经典可虚拟化模型。</p><h3 id="特权接触和陷入模拟"><a href="#特权接触和陷入模拟" class="headerlink" title="特权接触和陷入模拟"></a>特权接触和陷入模拟</h3><p>虚拟化场景下，要求 GuestOS 内核的特权解除。当其需要执行特权指令时，会产生 trap，被 VMM 捕获并由 VMM 完成。这就是 **特权解除和陷入模拟(Privilege deprivileging&#x2F;Trap-and-Emulation)**。</p><blockquote><p> 对于一般 RISC 处理器，如 MIPS，PowerPC 以及SPARC，敏感指令肯定是特权指令，但是x86 例外，x86绝大多数的敏感指令是特权指令，但是由于部分敏感指令不是特权指令，执行这些指令的时候不会自动trap被VMM捕获。</p></blockquote><h3 id="虚拟化"><a href="#虚拟化" class="headerlink" title="虚拟化"></a>虚拟化</h3><h4 id="完全虚拟化-Pure-virtualization"><a href="#完全虚拟化-Pure-virtualization" class="headerlink" title="完全虚拟化 Pure virtualization"></a>完全虚拟化 Pure virtualization</h4><p>完全虚拟化要求硬件架构是可虚拟化的，当 捕获(trap) 进入 hypervisor 后，由 hypervisor 去模拟敏感指令的执行，这项技术也被称为陷入模式(trap-and-emulate)。当一个 guest OS 想要去访问特权资源（物理外设），就会产生一个 trap 唤醒 hypervisor，hypervisor 去模拟这个访问，然后返回到 guest OS 的下一条指令去继续执行。</p><p>其采用了<strong>优先级压缩技术 Ring Compression</strong> 和 <strong>二进制代码翻译技术 Binary Translation</strong><br>优先级压缩技术使得 VMM 和 Guest 分别运行在不同特权级下。 对x86架构而言，即VMM运行在最高特权级别Ring 0下，Guest OS运行在Ring 1下，用户应用运行在Ring 3下。因此，Guest OS的核心指令无法直接下达到计算机系统硬件执行，而是需要经过VMM的捕获和模拟执行（部分难以虚拟化的指令需要通过二进制翻译技术进行转换）。</p><h4 id="半虚拟化-para-virtualization"><a href="#半虚拟化-para-virtualization" class="headerlink" title="半虚拟化 para-virtualization"></a>半虚拟化 para-virtualization</h4><p>半虚拟化通过修改 guest OS 的源码，使其避免难以虚拟化的指令（虚拟化漏洞）。操作系统通常会使用到处理器提供的全部功能，例如特权级别、地址空间和控制寄存器等。类虚拟化首先要解决的问题就是如何陷入VMM。典型的做法是修改 guest OS 的相关代码，让 os主动让出特权级别，而运行在次一级特权上。而当 guest OS 需要执行特权指令时，触发保护机制并通过 VMM 模拟。</p><p>半虚拟化通常能够达到比全虚拟化更好的性能，但是需要修改 OS 源码，而非运行时译码和处理。</p><blockquote><p>其与 partial-virtualization 有些差异，这只虚拟化部分外设来满足某些专门的软件的执行环境，但是不能运行所有可能运行在物理机上的软件。</p></blockquote><h2 id="发展历史"><a href="#发展历史" class="headerlink" title="发展历史"></a>发展历史</h2><p>从虚拟化概念的提出，虚拟化技术经过了三个阶段的进化。</p><p><strong>第一个阶段</strong>，所有的虚拟管理程序(hypervisor)在内核态实现，实现对稀缺资源的多路复用。例如 IBM VM&#x2F;370。<br><strong>第二个阶段</strong>，主流的虚拟机管理程序将管理函数的实现迁移到用户态，通过系统调用在宿主操作系统上做文章。然而，一些功能仍然需要到内核态进行，比如指令模拟和虚拟内存。<br><strong>第三个阶段</strong>，一些厂商开始从硬件层面支持虚拟化（Intel VMX 和 AMD SVM），进一步降低了虚拟化中内核操作的占比，将这一部分功能转由硬件代为实现，提高了性能。</p><p>现在很多基于硬件扩展的虚拟机管理程序分为两部分组成：**内核模式的模块(kernel-mode module)<strong>和</strong>用户模式的模块(user-mode helper)**。比如，经典的 Linux&#x2F;KVM-based 虚拟化系统就包含了一个 KVM 内核模块，同时对每个 VM 有一个用户态的 helper，比如 QEMU。其中，KVM 模块和硬件扩展和宿主内核打交道，用户模块则负责 VM 的管理和 IO 虚拟化。</p><h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>虚拟化系统内核态的组件总是会有各种各样的问题，威胁到主机的安全。比如在 KVM 的发展中就有了上百个 CVE 漏洞报告。这些漏洞可能被利用从而进行 Denial of Service(DoS) 攻击。一旦 KVM 的内核模块被黑入了，那么其上运行的各个虚拟机都难逃其难。</p><blockquote><p>CVE（Common Vulnerabilities and Exposures）的全称是公共漏洞和暴露，是公开披露的网络安全漏洞列表。IT人员、安全研究人员查阅CVE获取漏洞的详细信息，进而根据漏洞评分确定漏洞解决的优先级。</p></blockquote>]]></content>
-    
-    
-      
-      
-    <summary type="html">&lt;h2 id=&quot;定义&quot;&gt;&lt;a href=&quot;#定义&quot; class=&quot;headerlink&quot; title=&quot;定义&quot;&gt;&lt;/a&gt;定义&lt;/h2&gt;&lt;p&gt;虚拟化是将单一物理设备模拟为相互隔离的多个虚拟设备，同时保证这些虚拟设备的高效性。&lt;/p&gt;
-&lt;h3 id=&quot;Hypervisor&quot;&gt;&lt;a h</summary>
-      
-    
-    
-    
-    <category term="Virtualization" scheme="http://bl-gs.github.io/categories/Virtualization/"/>
-    
-    
-    <category term="Virtualization" scheme="http://bl-gs.github.io/tags/Virtualization/"/>
-    
-  </entry>
-  
-  <entry>
-    <title></title>
-    <link href="http://bl-gs.github.io/2023/08/09/2PL/"/>
-    <id>http://bl-gs.github.io/2023/08/09/2PL/</id>
-    <published>2023-08-09T14:21:47.561Z</published>
-    <updated>2023-08-09T14:21:47.561Z</updated>
-    
-    
-    
-    
-    
-  </entry>
-  
-  <entry>
-    <title>Transaction Introduction</title>
-    <link href="http://bl-gs.github.io/2023/08/09/Transaction/"/>
-    <id>http://bl-gs.github.io/2023/08/09/Transaction/</id>
-    <published>2023-08-09T13:19:21.095Z</published>
-    <updated>2023-08-09T14:18:00.555Z</updated>
-    
-    <content type="html"><![CDATA[<p><strong>事务</strong> 是访问并可能更新各种数据项的一个程序执行单元。简单的说，一个事务是这么一种操作，要么能够完成，要么不引起任何影响。也就是遵从 all-or-nothing 原语。</p><h2 id="事务的属性-Property"><a href="#事务的属性-Property" class="headerlink" title="事务的属性 Property"></a>事务的属性 Property</h2><ul><li><strong>原子性 Atomicity</strong>：事务的所有操作在数据库中要么全部正确反映出来，要么完全不反映</li><li><strong>一致性 Consistency</strong>：以隔离的方式执行事务以保持事务的一致性</li><li><strong>隔离性 Isolative</strong>：尽管多个事务可能并发执行，但是需要保证，对于每个事务，其运行时不需关心其他事务的运行情况。确保隔离性是数据库系统中 <em>并发控制</em> 的责任。</li><li><strong>持久性 Durability</strong>：当一个事务完成之后，它对数据库的改变是永久的，即使出现系统故障也是如此。</li></ul><h2 id="事务的隔离等级-Isolation-Level"><a href="#事务的隔离等级-Isolation-Level" class="headerlink" title="事务的隔离等级 Isolation Level"></a>事务的隔离等级 Isolation Level</h2><p>在事务执行过程中，可能出现多种违背事务属性的情况：</p><ul><li><strong>不可重复读 Unrepeated read</strong>：一个事务中的多次重复的读操作返回的数据不同</li><li><strong>脏读 Dirty read</strong>：事务执行过程中读取到未提交事务或者中止事务的更新数据</li><li><strong>脏写 Dirty write</strong>：事务执行过程中将要写入的数据已经被未提交事务或者中止事务更新过</li><li><strong>幻读 Magic read</strong>：读到已提交插入的数据，幻读与不可重复读类似，幻读是查询到了另一个事务已提交的新插入数据，而不可重复读是查询到了另一个事务已提交更新的数据。</li></ul><p>根据 MySQL 规定的隔离等级，有如下：</p><ul><li><strong>可串行化 Serializable</strong>：通常保证可串行化的执行。但是一些数据库系统某些情况下允许非可串行化执行的方式来实现这种隔离级别</li><li><strong>可重复读 Repeatable read</strong>：只允许读取已提交的数据，并进一步要求在一个事务两次读取一个数据项期间，其他事务不得更新该数据项</li><li><strong>已提交读 Read commited</strong>：只允许读取已提交的数据，当不要求可重复读</li><li><strong>未提交读 Read uncommited</strong>：允许读取未提交数据</li></ul><p>其中，未提交读会导致脏读、不可重复读和幻读；已提交读会导致不可重复读和幻读；可重复读会导致幻读。<br>这几种隔离等级下，事务均不允许发生脏写。</p><h2 id="崩溃一致性-Crash-Consistency"><a href="#崩溃一致性-Crash-Consistency" class="headerlink" title="崩溃一致性 Crash Consistency"></a>崩溃一致性 Crash Consistency</h2><p>事务也需要满足崩溃一致性。当系统由于断电或者种种不可预知的原因崩溃时，已提交事务的影响需要保持持久化或者在重启后能够被恢复；同时，未提交事务和崩溃事务的影响在系统重启后需要被消除。</p>]]></content>
-    
-    
-    <summary type="html">Transaction should be executed atomically. On the other hand, the effect of aborted transaction should be eliminated. In other words, the execution of a transaction should follow &quot;all-or-nothing&quot; semantics.</summary>
-    
-    
-    
-    <category term="Transaction" scheme="http://bl-gs.github.io/categories/Transaction/"/>
-    
-    
-    <category term="Transaction" scheme="http://bl-gs.github.io/tags/Transaction/"/>
     
   </entry>
   
